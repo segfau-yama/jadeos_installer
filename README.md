@@ -1,0 +1,2 @@
+# jadeos_installer
+jadeosのGUIインストーラー
