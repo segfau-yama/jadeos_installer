@@ -1,0 +1,58 @@
+{
+  "blockdevices": [
+    {
+      "name": "nvme0n1",
+      "type": "disk",
+      "size": "476.9G",
+      "model": "NVMe SSD",
+      "rm": false,
+      "mountpoint": null,
+      "mountpoints": [null]
+    },
+    {
+      "name": "nvme0n1p1",
+      "type": "part",
+      "size": "512M",
+      "model": null,
+      "rm": false,
+      "mountpoint": "/boot",
+      "mountpoints": ["/boot"]
+    },
+    {
+      "name": "sda",
+      "type": "disk",
+      "size": "931.5G",
+      "model": "USB DISK",
+      "rm": true,
+      "mountpoint": null,
+      "mountpoints": ["/media/usb"]
+    },
+    {
+      "name": "loop0",
+      "type": "loop",
+      "size": "2G",
+      "model": null,
+      "rm": false,
+      "mountpoint": "/nix/.ro-store",
+      "mountpoints": ["/nix/.ro-store"]
+    },
+    {
+      "name": "zram0",
+      "type": "disk",
+      "size": "8G",
+      "model": null,
+      "rm": false,
+      "mountpoint": "[SWAP]",
+      "mountpoints": ["[SWAP]"]
+    },
+    {
+      "name": "sr0",
+      "type": "rom",
+      "size": "1024M",
+      "model": "CDROM",
+      "rm": true,
+      "mountpoint": "/iso",
+      "mountpoints": ["/iso"]
+    }
+  ]
+}
