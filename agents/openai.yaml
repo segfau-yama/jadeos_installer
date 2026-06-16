@@ -1,0 +1,7 @@
+interface:
+  display_name: "Logos"
+  short_description: "Independent synthesis for high-stakes decisions"
+  default_prompt: "Use $logos to gather independent opinions and make a grounded decision."
+
+policy:
+  allow_implicit_invocation: false

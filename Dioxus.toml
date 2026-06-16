@@ -1,0 +1,11 @@
+[application]
+name = "jade-installer"
+default_platform = "desktop"
+out_dir = "dist"
+
+[web.app]
+title = "JadeOS Installer"
+
+[web.watcher]
+reload_html = true
+watch_path = ["src"]

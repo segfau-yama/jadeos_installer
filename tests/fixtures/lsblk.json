@@ -1,0 +1,70 @@
+{
+  "blockdevices": [
+    {
+      "name": "nvme0n1",
+      "path": "/dev/nvme0n1",
+      "size": 512110190592,
+      "model": "Fast NVMe",
+      "rm": 0,
+      "type": "disk",
+      "mountpoints": [
+        null
+      ]
+    },
+    {
+      "name": "nvme0n1p1",
+      "path": "/dev/nvme0n1p1",
+      "size": 536870912,
+      "model": null,
+      "rm": 0,
+      "type": "part",
+      "mountpoints": [
+        "/boot"
+      ]
+    },
+    {
+      "name": "sda",
+      "path": "/dev/sda",
+      "size": 1000204886016,
+      "model": "Installer USB",
+      "rm": 1,
+      "type": "disk",
+      "mountpoints": [
+        "/run/media/live"
+      ]
+    },
+    {
+      "name": "loop0",
+      "path": "/dev/loop0",
+      "size": 2147483648,
+      "model": null,
+      "rm": 0,
+      "type": "disk",
+      "mountpoints": [
+        "/nix/.ro-store"
+      ]
+    },
+    {
+      "name": "zram0",
+      "path": "/dev/zram0",
+      "size": 4294967296,
+      "model": null,
+      "rm": 0,
+      "type": "disk",
+      "mountpoints": [
+        "[SWAP]"
+      ]
+    },
+    {
+      "name": "sr0",
+      "path": "/dev/sr0",
+      "size": 8589934592,
+      "model": "DVD-ROM",
+      "rm": 1,
+      "type": "rom",
+      "mountpoints": [
+        null
+      ]
+    }
+  ]
+}

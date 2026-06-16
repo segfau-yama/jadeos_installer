@@ -1,0 +1,5 @@
+schema_version = 1
+hostname = "jadeos"
+username = "jade"
+target_disk = "/dev/nvme0n1"
+disk_erase_confirmed = false
