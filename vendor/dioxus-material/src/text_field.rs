@@ -49,36 +49,41 @@ pub fn TextField(
         div {
             display: "flex",
             flex_direction: "column",
-            gap: "10px",
+            gap: "8px",
             width,
             font_family: "system-ui, sans-serif",
             label {
                 color: "{theme.on_surface_variant}",
                 font_size: "{theme.label_small}px",
-                font_weight: "600",
-                letter_spacing: "0.03em",
+                font_weight: "700",
+                letter_spacing: "0.08em",
                 text_transform: "uppercase",
                 "{label}"
             }
             input {
                 r#type: "{input_type}",
                 value: value.clone(),
-                padding: "14px 16px",
-                min_height: "52px",
+                width: "100%",
+                height: "58px",
+                padding: "0 18px",
+                box_sizing: "border-box",
                 border: "1px solid {theme.outline_color}",
-                border_radius: "{theme.border_radius_small}",
+                border_radius: "18px",
                 outline: "none",
                 background: "{background}",
                 color: "{theme.on_surface_color}",
                 font_size: "{theme.label_medium}px",
                 line_height: "1.3",
+                box_shadow: "inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 8px 20px rgba(18, 33, 28, 0.04)",
+                transition: "border-color 120ms ease, box-shadow 120ms ease, background 120ms ease",
                 oninput: move |event| onchange.call(event)
             }
             if let Some(supporting_text) = supporting_text {
                 p {
                     margin: 0,
                     color: "{theme.on_surface_variant}",
-                    font_size: "13px",
+                    font_size: "12px",
+                    line_height: "1.45",
                     "{supporting_text}"
                 }
             }

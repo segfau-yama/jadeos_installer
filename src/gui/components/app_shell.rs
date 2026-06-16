@@ -1,59 +1,83 @@
 use dioxus::prelude::*;
-use dioxus_material::Theme;
 
-use crate::gui::components::ErrorBanner;
-use crate::gui::components::ProgressHeader;
+use crate::gui::components::{
+    Card, CardBody, Container, ErrorBanner, Flexbox, ProgressHeader, Typography, TypographyTag,
+};
+use crate::gui::controller::clear_error;
 use crate::gui::presentation::{APP_SUBTITLE, APP_TITLE};
-use crate::gui::state::InstallerStep;
+use crate::gui::routes::{guard_route, Route};
+use crate::gui::state::use_installer_state;
 
 #[component]
-pub fn AppShell(
-    step: InstallerStep,
-    error_message: Option<String>,
-    on_dismiss_error: EventHandler<()>,
-    current_page: Element,
-) -> Element {
+pub fn AppShell() -> Element {
+    let state = use_installer_state();
+    let snapshot = state();
+    let current_route = use_route::<Route>();
+    let redirect_route = guard_route(&snapshot, current_route.clone());
+    let display_route = if current_route == redirect_route {
+        current_route.clone()
+    } else {
+        redirect_route.clone()
+    };
+    let navigator = use_navigator();
+    let dismiss_state = state;
+    let current_route_for_guard = current_route.clone();
+    let redirect_route_for_guard = redirect_route.clone();
+
+    use_effect(move || {
+        if current_route_for_guard != redirect_route_for_guard {
+            navigator.replace(redirect_route_for_guard.clone());
+        }
+    });
+
     rsx! {
-        Theme {
-            primary_color: "#00695c",
-            background_color: "#edf5f1",
-            secondary_container_color: "#d8f0e4",
-            surface_color: "#ffffff",
-            surface_variant_color: "#f6fbf8",
-            outline_color: "#adc3b7",
-            on_surface_color: "#12211c",
-            on_surface_variant: "#51625a",
-            on_primary_color: "#ffffff",
-            div {
-                style: "min-height: 100vh; padding: 32px 20px 48px; background: radial-gradient(circle at top left, #d7f0e4 0%, #edf5f1 45%, #f8fbfa 100%);",
-                div {
-                    style: "max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; line-height: 1.5;",
+        div {
+            class: "min-h-screen px-4 py-8 sm:px-6 lg:px-8",
+            Container {
+                class: "max-w-6xl",
+                Flexbox {
+                    direction: "flex-col".to_string(),
+                    gap: "gap-6".to_string(),
+                    class: "leading-7".to_string(),
                     header {
-                        style: "display: flex; flex-direction: column; gap: 10px;",
-                        p {
-                            style: "margin: 0; color: #456458; font-size: 13px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;",
+                        class: "flex flex-col gap-3",
+                        Typography {
+                            tag: TypographyTag::P,
+                            class: "m-0 text-xs font-bold uppercase tracking-[0.18em] text-emerald-900/65".to_string(),
                             "Safety-first installer"
                         }
-                        h1 {
-                            style: "margin: 0; font-size: clamp(2.2rem, 5vw, 3.5rem); line-height: 1.05; color: #10201b;",
+                        Typography {
+                            tag: TypographyTag::H1,
+                            class: "m-0 max-w-4xl text-4xl font-bold tracking-[-0.04em] text-jade-950 sm:text-5xl lg:text-6xl".to_string(),
                             "{APP_TITLE}"
                         }
-                        p {
-                            style: "margin: 0; max-width: 72ch; color: #51625a; font-size: 1.05rem;",
+                        Typography {
+                            tag: TypographyTag::P,
+                            class: "m-0 max-w-3xl text-base text-emerald-900/70 sm:text-lg".to_string(),
                             "{APP_SUBTITLE}"
                         }
                     }
-                    div {
-                        style: "border-radius: 32px; border: 1px solid rgba(173, 195, 183, 0.8); background: rgba(255, 255, 255, 0.9); box-shadow: 0 26px 70px rgba(12, 34, 27, 0.12); backdrop-filter: blur(18px); padding: 24px;",
-                        ProgressHeader { step: step }
-                        div {
-                            style: "margin-top: 24px;",
-                            {current_page}
+                    Card {
+                        class: "w-full".to_string(),
+                        CardBody {
+                            class: "pt-6 sm:px-8 lg:px-10".to_string(),
+                            ProgressHeader { active_route: display_route.clone() }
+                            div {
+                                class: "mt-2",
+                                if display_route == current_route {
+                                    Outlet::<Route> {}
+                                } else {
+                                    section {
+                                        class: "py-12 text-emerald-900/65",
+                                        "Redirecting to the first valid step..."
+                                    }
+                                }
+                            }
                         }
                     }
                     ErrorBanner {
-                        message: error_message,
-                        on_dismiss: move |_| on_dismiss_error.call(()),
+                        message: snapshot.ui.error_message.clone(),
+                        on_dismiss: move |_| clear_error(dismiss_state),
                     }
                 }
             }

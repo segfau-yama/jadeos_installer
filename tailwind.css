@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@source "./src/**/*.{rs,html,css}";
+
+@theme {
+  --color-jade-50: #f4fbf8;
+  --color-jade-100: #e7f6ef;
+  --color-jade-200: #cfeee1;
+  --color-jade-300: #abdccc;
+  --color-jade-400: #7fc6b0;
+  --color-jade-500: #55a78f;
+  --color-jade-600: #2f816d;
+  --color-jade-700: #1f6757;
+  --color-jade-800: #174d42;
+  --color-jade-900: #102f29;
+  --color-jade-950: #0b1d19;
+  --font-sans: "Inter", "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-height: 100%;
+    background: #edf5f1;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    font-family: var(--font-sans);
+    color: var(--color-jade-950);
+    background:
+      radial-gradient(circle at top left, rgba(207, 238, 225, 0.92) 0%, rgba(237, 245, 241, 1) 42%, rgba(248, 251, 250, 1) 100%);
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+}

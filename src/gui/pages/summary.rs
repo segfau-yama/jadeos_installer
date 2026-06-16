@@ -1,80 +1,91 @@
 use dioxus::prelude::*;
-use dioxus_material::{Button, Chip, TextButton};
 
-use crate::api::install::InstallPlan;
-use crate::gui::components::{PlanCommandList, ValidationList};
-use crate::gui::controller::navigate_to;
+use crate::gui::components::{
+    ActionRow, BadgeTone, ButtonVariant, Card, CardBody, Col, Flexbox, InfoTile, PageIntro,
+    PageSection, PlanCommandList, Row, StatusBadge, TogglePill, Typography, TypographyTag,
+    UiButton, ValidationList,
+};
+use crate::gui::controller::{preview_plan, start_install};
 use crate::gui::presentation::{ERASE_CONFIRMATION_COPY, SUMMARY_FIXED_SETTINGS};
-use crate::gui::state::{InstallerState, InstallerStep};
+use crate::gui::routes::Route;
+use crate::gui::state::use_installer_state;
 use crate::gui::validation::summary_validation_errors;
 
 #[component]
-pub fn SummaryPage(
-    mut state: Signal<InstallerState>,
-    plan_preview: Option<InstallPlan>,
-    on_install: EventHandler<()>,
-) -> Element {
+pub fn SummaryPage() -> Element {
+    let mut state = use_installer_state();
     let snapshot = state();
+    let plan_preview = preview_plan(&snapshot);
     let validation_errors = summary_validation_errors(&snapshot.config, &snapshot.user);
     let install_ready = validation_errors.is_empty() && plan_preview.is_some();
+    let navigator = use_navigator();
+    let back_navigator = navigator.clone();
+    let install_navigator = navigator.clone();
 
     rsx! {
-        section {
-            style: "display: flex; flex-direction: column; gap: 20px;",
-            div {
-                style: "display: flex; flex-direction: column; gap: 10px;",
-                h2 {
-                    style: "margin: 0; color: #10201b; font-size: 2rem;",
-                    "Summary"
-                }
-                p {
-                    style: "margin: 0; color: #51625a; max-width: 60ch;",
-                    "Review the chosen inputs and the fixed MVP settings before starting the install flow."
-                }
+        PageSection {
+            PageIntro {
+                title: "Summary".to_string(),
+                description: "Review the chosen inputs and the fixed MVP settings before starting the install flow.".to_string(),
             }
-            div {
-                style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;",
-                div {
-                    style: "padding: 16px; border-radius: 22px; background: #f6fbf8; border: 1px solid #dbe7e0;",
-                    p { style: "margin: 0 0 6px; color: #51625a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;", "Hostname" }
-                    p { style: "margin: 0; color: #10201b; font-weight: 600;", "{snapshot.config.hostname}" }
+            Row {
+                cols: "grid-cols-1 md:grid-cols-2 xl:grid-cols-3".to_string(),
+                gap: "gap-4".to_string(),
+                Col {
+                    InfoTile {
+                        label: "Hostname".to_string(),
+                        value: snapshot.config.hostname.clone(),
+                    }
                 }
-                div {
-                    style: "padding: 16px; border-radius: 22px; background: #f6fbf8; border: 1px solid #dbe7e0;",
-                    p { style: "margin: 0 0 6px; color: #51625a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;", "Username" }
-                    p { style: "margin: 0; color: #10201b; font-weight: 600;", "{snapshot.config.username}" }
+                Col {
+                    InfoTile {
+                        label: "Username".to_string(),
+                        value: snapshot.config.username.clone(),
+                    }
                 }
-                div {
-                    style: "padding: 16px; border-radius: 22px; background: #f6fbf8; border: 1px solid #dbe7e0;",
-                    p { style: "margin: 0 0 6px; color: #51625a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;", "Target disk" }
-                    p { style: "margin: 0; color: #10201b; font-weight: 600;", "{snapshot.config.target_disk}" }
+                Col {
+                    InfoTile {
+                        label: "Target disk".to_string(),
+                        value: snapshot.config.target_disk.clone(),
+                    }
                 }
                 for (label, value) in SUMMARY_FIXED_SETTINGS {
-                    div {
+                    Col {
                         key: "{label}",
-                        style: "padding: 16px; border-radius: 22px; background: #f6fbf8; border: 1px solid #dbe7e0;",
-                        p { style: "margin: 0 0 6px; color: #51625a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;", "{label}" }
-                        p { style: "margin: 0; color: #10201b; font-weight: 600;", "{value}" }
+                        InfoTile {
+                            label: label.to_string(),
+                            value: value.to_string(),
+                        }
                     }
                 }
             }
-            div {
-                style: "display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 24px; background: #fff8ee; border: 1px solid #f3d3ac;",
-                p {
-                    style: "margin: 0; color: #8a3f09; font-weight: 700;",
-                    "Destructive confirmation"
-                }
-                p {
-                    style: "margin: 0; color: #51625a;",
-                    "{ERASE_CONFIRMATION_COPY}"
-                }
-                div {
-                    Chip {
-                        is_selected: Some(snapshot.config.disk_erase_confirmed),
-                        onclick: move |_| {
-                        let mut draft = state.write();
-                        draft.config.disk_erase_confirmed = !draft.config.disk_erase_confirmed;
-                        draft.ui.error_message = None;
+            Card {
+                color: "bg-amber-50/80".to_string(),
+                class: "border-amber-200".to_string(),
+                shadow: "shadow-none".to_string(),
+                rounded: "rounded-[1.75rem]".to_string(),
+                CardBody {
+                    class: "gap-4".to_string(),
+                    Flexbox {
+                        wrap: "flex-wrap".to_string(),
+                        items: "items-center".to_string(),
+                        gap: "gap-3".to_string(),
+                        StatusBadge {
+                            tone: BadgeTone::Warning,
+                            "Destructive confirmation"
+                        }
+                        Typography {
+                            tag: TypographyTag::P,
+                            class: "m-0 text-sm font-medium text-amber-800".to_string(),
+                            "{ERASE_CONFIRMATION_COPY}"
+                        }
+                    }
+                    TogglePill {
+                        selected: snapshot.config.disk_erase_confirmed,
+                        onpress: move |_| {
+                            let mut draft = state.write();
+                            draft.config.disk_erase_confirmed = !draft.config.disk_erase_confirmed;
+                            draft.ui.error_message = None;
                         },
                         if snapshot.config.disk_erase_confirmed {
                             "Erase confirmed"
@@ -88,16 +99,20 @@ pub fn SummaryPage(
             if let Some(plan) = plan_preview {
                 PlanCommandList { title: "Planned commands".to_string(), commands: plan.commands }
             }
-            div {
-                style: "display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;",
-                TextButton {
-                    onpress: move |_| navigate_to(state, InstallerStep::Disk),
+            ActionRow {
+                UiButton {
+                    variant: ButtonVariant::Ghost,
+                    onpress: move |_: MouseEvent| {
+                        back_navigator.push(Route::Disk {});
+                    },
                     "Back"
                 }
-                Button {
+                UiButton {
                     disabled: !install_ready,
-                    onpress: move |_| {
-                        on_install.call(());
+                    onpress: move |_: MouseEvent| {
+                        if start_install(state) {
+                            install_navigator.push(Route::Install {});
+                        }
                     },
                     "Install"
                 }

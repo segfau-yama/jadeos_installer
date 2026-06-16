@@ -1,7 +1,9 @@
 use dioxus::prelude::*;
-use dioxus_material::Chip;
 
 use crate::api::install::InstallCommand;
+use crate::gui::components::{
+    BadgeTone, Card, CardBody, Flexbox, StatusBadge, Typography, TypographyTag,
+};
 
 #[component]
 pub fn PlanCommandList(title: String, commands: Vec<InstallCommand>) -> Element {
@@ -10,35 +12,51 @@ pub fn PlanCommandList(title: String, commands: Vec<InstallCommand>) -> Element 
     }
 
     rsx! {
-        div {
-            style: "display: flex; flex-direction: column; gap: 14px; margin-top: 20px;",
-            h3 {
-                style: "margin: 0; color: #10201b; font-size: 1.15rem;",
+        Flexbox {
+            direction: "flex-col".to_string(),
+            gap: "gap-4".to_string(),
+            class: "mt-5".to_string(),
+            Typography {
+                tag: TypographyTag::H3,
+                class: "m-0 text-lg font-semibold text-jade-950".to_string(),
                 "{title}"
             }
-            div {
-                style: "display: flex; flex-direction: column; gap: 12px;",
+            Flexbox {
+                direction: "flex-col".to_string(),
+                gap: "gap-3".to_string(),
                 for command in commands {
-                    article {
+                    Card {
                         key: "{command.description}",
-                        style: "display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid #dbe7e0; border-radius: 20px; background: #fcfefd;",
-                        div {
-                            style: "display: flex; flex-wrap: wrap; gap: 10px; align-items: center;",
-                            Chip {
-                                is_selected: Some(command.destructive),
-                                onclick: move |_| {},
-                                "{command.phase.label()}"
-                            }
-                            if command.destructive {
-                                span {
-                                    style: "color: #8a3f09; font-size: 13px; font-weight: 600;",
-                                    "Destructive"
+                        color: "bg-white".to_string(),
+                        shadow: "shadow-none".to_string(),
+                        rounded: "rounded-[1.5rem]".to_string(),
+                        CardBody {
+                            class: "gap-4".to_string(),
+                            Flexbox {
+                                wrap: "flex-wrap".to_string(),
+                                items: "items-center".to_string(),
+                                gap: "gap-3".to_string(),
+                                StatusBadge {
+                                    tone: if command.destructive {
+                                        BadgeTone::Warning
+                                    } else {
+                                        BadgeTone::Accent
+                                    },
+                                    "{command.phase.label()}"
+                                }
+                                if command.destructive {
+                                    Typography {
+                                        tag: TypographyTag::Span,
+                                        class: "text-sm font-semibold text-amber-700".to_string(),
+                                        "Destructive"
+                                    }
                                 }
                             }
-                        }
-                        code {
-                            style: "display: block; padding: 12px 14px; border-radius: 16px; background: #13211c; color: #ebfff5; font-family: ui-monospace, SFMono-Regular, monospace; overflow-x: auto;",
-                            "{command.render_command()}"
+                            Typography {
+                                tag: TypographyTag::Code,
+                                class: "block overflow-x-auto rounded-[1.25rem] bg-jade-950 px-4 py-3 font-mono text-sm leading-6 text-emerald-50".to_string(),
+                                "{command.render_command()}"
+                            }
                         }
                     }
                 }

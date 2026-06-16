@@ -1,18 +1,10 @@
+use dioxus::prelude::{use_context, Signal};
 use serde::{Deserialize, Serialize};
 
 use crate::api::disk::DiskDeviceInfo;
 use crate::api::install::{InstallPhase, InstallPlan};
 
 pub const INSTALLER_SCHEMA_VERSION: u32 = 1;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum InstallerStep {
-    Welcome,
-    User,
-    Disk,
-    Summary,
-    Install,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InstallerConfig {
@@ -52,7 +44,6 @@ impl Default for UserDraft {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct InstallerUiState {
-    pub step: InstallerStep,
     pub available_disks: Vec<DiskDeviceInfo>,
     pub error_message: Option<String>,
 }
@@ -60,7 +51,6 @@ pub struct InstallerUiState {
 impl Default for InstallerUiState {
     fn default() -> Self {
         Self {
-            step: InstallerStep::Welcome,
             available_disks: Vec::new(),
             error_message: None,
         }
@@ -103,4 +93,8 @@ impl Default for InstallerState {
             runtime: InstallRuntime::default(),
         }
     }
+}
+
+pub fn use_installer_state() -> Signal<InstallerState> {
+    use_context()
 }

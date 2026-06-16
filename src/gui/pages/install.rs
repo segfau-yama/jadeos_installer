@@ -1,46 +1,50 @@
 use dioxus::prelude::*;
-use dioxus_material::{Button, Chip, TextButton};
 
-use crate::gui::components::PlanCommandList;
-use crate::gui::controller::navigate_to;
+use crate::gui::components::{
+    ActionRow, BadgeTone, ButtonVariant, Flexbox, NoticePanel, PageIntro, PageSection,
+    PlanCommandList, ProgressBar, StatusBadge, Typography, TypographyTag, UiButton,
+};
 use crate::gui::presentation::install_phases;
-use crate::gui::state::{InstallerState, InstallerStep};
+use crate::gui::routes::Route;
+use crate::gui::state::use_installer_state;
 
 #[component]
-pub fn InstallPage(state: Signal<InstallerState>) -> Element {
+pub fn InstallPage() -> Element {
+    let state = use_installer_state();
     let snapshot = state();
     let phases = install_phases();
+    let navigator = use_navigator();
+    let current_index = phases
+        .iter()
+        .position(|phase| *phase == snapshot.runtime.install_phase)
+        .unwrap_or(0);
+    let progress = (((current_index + 1) as f32 / phases.len() as f32) * 100.).round() as u8;
 
     rsx! {
-        section {
-            style: "display: flex; flex-direction: column; gap: 20px;",
-            div {
-                style: "display: flex; flex-direction: column; gap: 10px;",
-                h2 {
-                    style: "margin: 0; color: #10201b; font-size: 2rem;",
-                    "Install"
-                }
-                p {
-                    style: "margin: 0; color: #51625a; max-width: 60ch;",
-                    "This scaffold stops at plan reporting. The api layer already owns the install commands, but actual command execution is intentionally left for the next step."
-                }
+        PageSection {
+            PageIntro {
+                title: "Install".to_string(),
+                description: "This scaffold stops at plan reporting. The api layer already owns the install commands, but actual command execution is intentionally left for the next step.".to_string(),
             }
-            div {
-                style: "display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 24px; border: 1px solid #dbe7e0; background: #f6fbf8;",
-                div {
-                    style: "display: flex; flex-wrap: wrap; gap: 10px; align-items: center;",
-                    Chip {
-                        is_selected: Some(true),
-                        onclick: move |_| {},
+            NoticePanel {
+                class: "bg-emerald-50/75 py-5".to_string(),
+                Flexbox {
+                    wrap: "flex-wrap".to_string(),
+                    items: "items-center".to_string(),
+                    gap: "gap-3".to_string(),
+                    StatusBadge {
+                        tone: BadgeTone::Accent,
                         "{snapshot.runtime.install_phase.label()}"
                     }
-                    p {
-                        style: "margin: 0; color: #51625a;",
+                    Typography {
+                        tag: TypographyTag::P,
+                        class: "m-0 text-sm font-medium text-emerald-900/70".to_string(),
                         "Current phase"
                     }
                 }
-                p {
-                    style: "margin: 0; color: #10201b; font-weight: 600;",
+                Typography {
+                    tag: TypographyTag::P,
+                    class: "mt-3 text-base font-semibold text-jade-950".to_string(),
                     {
                         snapshot
                             .runtime
@@ -49,47 +53,61 @@ pub fn InstallPage(state: Signal<InstallerState>) -> Element {
                             .unwrap_or_else(|| "No command is running in scaffold mode.".to_string())
                     }
                 }
+                div {
+                    class: "mt-4",
+                    ProgressBar {
+                        percentage: progress,
+                        rounded: "rounded-full".to_string(),
+                        class: "h-3".to_string(),
+                    }
+                }
             }
-            div {
-                style: "display: flex; flex-wrap: wrap; gap: 12px;",
+            Flexbox {
+                wrap: "flex-wrap".to_string(),
+                gap: "gap-3".to_string(),
                 for phase in phases {
-                    div {
+                    StatusBadge {
                         key: "{phase.label()}",
-                        Chip {
-                            is_selected: Some(phase == snapshot.runtime.install_phase),
-                            onclick: move |_| {},
-                            "{phase.label()}"
-                        }
+                        tone: if phase == snapshot.runtime.install_phase {
+                            BadgeTone::Accent
+                        } else {
+                            BadgeTone::Muted
+                        },
+                        "{phase.label()}"
                     }
                 }
             }
             if let Some(plan) = snapshot.runtime.install_plan.clone() {
                 PlanCommandList { title: "Install plan".to_string(), commands: plan.commands }
             }
-            h3 {
-                style: "margin: 0; color: #10201b; font-size: 1.15rem;",
+            Typography {
+                tag: TypographyTag::H3,
+                class: "m-0 text-lg font-semibold text-jade-950".to_string(),
                 "Install log"
             }
             if snapshot.runtime.install_log.is_empty() {
-                p {
-                    style: "margin: 0; color: #51625a;",
+                Typography {
+                    tag: TypographyTag::P,
+                    class: "m-0 text-base text-emerald-900/70".to_string(),
                     "No log entries yet."
                 }
             } else {
                 pre {
-                    style: "margin: 0; background: #13211c; color: #e8fff3; padding: 18px; border-radius: 22px; overflow-x: auto;",
+                    class: "m-0 overflow-x-auto rounded-[1.5rem] bg-jade-950 px-5 py-4 text-sm leading-6 text-emerald-50",
                     "{snapshot.runtime.install_log.join(\"\\n\")}"
                 }
             }
-            div {
-                style: "display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;",
-                TextButton {
-                    onpress: move |_| navigate_to(state, InstallerStep::Summary),
+            ActionRow {
+                UiButton {
+                    variant: ButtonVariant::Ghost,
+                    onpress: move |_: MouseEvent| {
+                        navigator.push(Route::Summary {});
+                    },
                     "Back to summary"
                 }
-                Button {
+                UiButton {
                     disabled: true,
-                    onpress: move |_| {},
+                    onpress: move |_: MouseEvent| {},
                     "Reboot (not wired yet)"
                 }
             }

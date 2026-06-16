@@ -1,7 +1,10 @@
 use dioxus::prelude::*;
-use dioxus_material::{Button, Chip};
 
 use crate::api::disk::DiskDeviceInfo;
+use crate::gui::components::{
+    BadgeTone, ButtonVariant, Card, CardBody, CardFooter, CardHeader, Flexbox, InfoTile,
+    NoticePanel, PanelTone, StatusBadge, Typography, TypographyTag, UiButton,
+};
 
 #[component]
 pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler<()>) -> Element {
@@ -13,82 +16,103 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
     } else {
         "Use this disk"
     };
-    let action_color = if is_selected { "#00695c" } else { "#275a4f" }.to_string();
 
     rsx! {
-        article {
+        Card {
             key: "{disk_path}",
-            style: "display: flex; flex-direction: column; gap: 16px; border: 1px solid #dbe7e0; border-radius: 24px; padding: 20px; background: #fcfefd;",
-            div {
-                style: "display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: flex-start;",
-                div {
-                    style: "display: flex; flex-direction: column; gap: 6px;",
-                    h3 {
-                        style: "margin: 0; color: #10201b; font-size: 1.25rem;",
-                        "{disk_path}"
-                    }
-                    p {
-                        style: "margin: 0; color: #51625a;",
-                        "{disk.model}"
-                    }
-                }
-                div {
-                    style: "display: flex; flex-wrap: wrap; gap: 8px;",
+            color: if is_selected {
+                "bg-emerald-50/85".to_string()
+            } else {
+                "bg-white".to_string()
+            },
+            shadow: "shadow-none".to_string(),
+            rounded: "rounded-[1.75rem]".to_string(),
+            CardHeader {
+                class: "gap-4".to_string(),
+                Flexbox {
+                    wrap: "flex-wrap".to_string(),
+                    items: "items-start".to_string(),
+                    justify: "justify-between".to_string(),
+                    gap: "gap-4".to_string(),
                     div {
-                        Chip {
-                            is_selected: Some(is_selected),
-                            onclick: move |_| on_select.call(()),
-                            if is_selected { "Current choice" } else { "Available" }
+                        class: "flex flex-col gap-1",
+                        Typography {
+                            tag: TypographyTag::H3,
+                            class: "m-0 text-xl font-semibold text-jade-950".to_string(),
+                            "{disk_path}"
+                        }
+                        Typography {
+                            tag: TypographyTag::P,
+                            class: "m-0 text-sm text-emerald-900/65".to_string(),
+                            "{disk.model}"
                         }
                     }
-                    if disk.removable {
-                        div {
-                            Chip {
-                                is_selected: Some(false),
-                                onclick: move |_| {},
+                    Flexbox {
+                        wrap: "flex-wrap".to_string(),
+                        gap: "gap-2".to_string(),
+                        StatusBadge {
+                            tone: if is_selected {
+                                BadgeTone::Accent
+                            } else {
+                                BadgeTone::Muted
+                            },
+                            if is_selected { "Current choice" } else { "Available" }
+                        }
+                        if disk.removable {
+                            StatusBadge {
+                                tone: BadgeTone::Muted,
                                 "Removable"
                             }
                         }
-                    }
-                    if disk.mounted {
-                        div {
-                            Chip {
-                                is_selected: Some(true),
-                                onclick: move |_| {},
+                        if disk.mounted {
+                            StatusBadge {
+                                tone: BadgeTone::Warning,
                                 "Mounted"
                             }
                         }
                     }
                 }
             }
-            div {
-                style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;",
+            CardBody {
+                class: "pt-0".to_string(),
                 div {
-                    style: "padding: 12px 14px; border-radius: 18px; background: #f4faf6;",
-                    p { style: "margin: 0 0 4px; color: #51625a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;", "Size" }
-                    p { style: "margin: 0; color: #10201b; font-weight: 600;", "{disk.size_gib():.1} GiB" }
+                    class: "grid grid-cols-1 gap-3 sm:grid-cols-3",
+                    InfoTile {
+                        label: "Size".to_string(),
+                        value: format!("{:.1} GiB", disk.size_gib()),
+                        class: "rounded-[1.25rem] px-4 py-3".to_string(),
+                    }
+                    InfoTile {
+                        label: "Removable".to_string(),
+                        value: removable_label.to_string(),
+                        class: "rounded-[1.25rem] px-4 py-3".to_string(),
+                    }
+                    InfoTile {
+                        label: "Mounted".to_string(),
+                        value: mounted_label.to_string(),
+                        class: "rounded-[1.25rem] px-4 py-3".to_string(),
+                    }
                 }
-                div {
-                    style: "padding: 12px 14px; border-radius: 18px; background: #f4faf6;",
-                    p { style: "margin: 0 0 4px; color: #51625a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;", "Removable" }
-                    p { style: "margin: 0; color: #10201b; font-weight: 600;", "{removable_label}" }
-                }
-                div {
-                    style: "padding: 12px 14px; border-radius: 18px; background: #f4faf6;",
-                    p { style: "margin: 0 0 4px; color: #51625a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;", "Mounted" }
-                    p { style: "margin: 0; color: #10201b; font-weight: 600;", "{mounted_label}" }
+                if disk.mounted {
+                    NoticePanel {
+                        tone: PanelTone::Warning,
+                        class: "rounded-[1.25rem] px-4 py-3".to_string(),
+                        Typography {
+                            tag: TypographyTag::P,
+                            class: "m-0 text-sm font-medium".to_string(),
+                            "Warning: this disk currently has mounted filesystems."
+                        }
+                    }
                 }
             }
-            if disk.mounted {
-                p {
-                    style: "margin: 0; padding: 12px 14px; border-radius: 18px; background: #fff4ea; color: #8a3f09;",
-                    "Warning: this disk currently has mounted filesystems."
-                }
-            }
-            div {
-                Button {
+            CardFooter {
+                UiButton {
                     onpress: move |_| on_select.call(()),
-                    background_color: Some(action_color.clone()),
+                    variant: if is_selected {
+                        ButtonVariant::Secondary
+                    } else {
+                        ButtonVariant::Primary
+                    },
                     "{selection_label}"
                 }
             }

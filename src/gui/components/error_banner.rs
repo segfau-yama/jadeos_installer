@@ -1,29 +1,37 @@
 use dioxus::prelude::*;
-use dioxus_material::{Dialog, TextButton};
+
+use crate::gui::components::{
+    ButtonVariant, Flexbox, ModalDialog, Typography, TypographyTag, UiButton,
+};
 
 #[component]
 pub fn ErrorBanner(message: Option<String>, on_dismiss: EventHandler<()>) -> Element {
     match message {
         Some(message) => rsx! {
-            Dialog {
+            ModalDialog {
                 is_visible: true,
-                div {
-                    style: "display: flex; flex-direction: column; gap: 16px;",
-                    p {
-                        style: "margin: 0; color: #8a3f09; font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;",
+                Flexbox {
+                    direction: "flex-col".to_string(),
+                    gap: "gap-4".to_string(),
+                    Typography {
+                        tag: TypographyTag::P,
+                        class: "m-0 text-xs font-bold uppercase tracking-[0.16em] text-amber-700".to_string(),
                         "Installer notice"
                     }
-                    h2 {
-                        style: "margin: 0; color: #15211b; font-size: 1.45rem;",
+                    Typography {
+                        tag: TypographyTag::H2,
+                        class: "m-0 text-2xl font-semibold tracking-[-0.03em] text-jade-950".to_string(),
                         "Something needs attention"
                     }
-                    p {
-                        style: "margin: 0; color: #43554d;",
+                    Typography {
+                        tag: TypographyTag::P,
+                        class: "m-0 text-base leading-7 text-emerald-900/72".to_string(),
                         "{message}"
                     }
-                    div {
-                        style: "display: flex; justify-content: flex-end;",
-                        TextButton {
+                    Flexbox {
+                        justify: "justify-end".to_string(),
+                        UiButton {
+                            variant: ButtonVariant::Ghost,
                             onpress: move |_| on_dismiss.call(()),
                             "Close"
                         }

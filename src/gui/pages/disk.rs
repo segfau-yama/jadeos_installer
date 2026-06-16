@@ -1,46 +1,48 @@
 use dioxus::prelude::*;
-use dioxus_material::{Button, TextButton};
 
-use crate::gui::components::{DiskCard, ValidationList};
-use crate::gui::controller::{continue_from_disk, navigate_to, refresh_disks};
-use crate::gui::state::{InstallerState, InstallerStep};
+use crate::gui::components::{
+    ActionRow, ButtonVariant, DiskCard, Flexbox, NoticePanel, PageIntro, PageSection, Typography,
+    TypographyTag, UiButton, ValidationList,
+};
+use crate::gui::controller::{continue_from_disk, refresh_disks};
+use crate::gui::routes::Route;
+use crate::gui::state::use_installer_state;
 use crate::gui::validation::disk_validation_errors;
 
 #[component]
-pub fn DiskPage(mut state: Signal<InstallerState>) -> Element {
+pub fn DiskPage() -> Element {
+    let mut state = use_installer_state();
     let snapshot = state();
     let validation_errors = disk_validation_errors(&snapshot.config);
     let selected_disk = snapshot.config.target_disk.clone();
+    let navigator = use_navigator();
+    let back_navigator = navigator.clone();
+    let continue_navigator = navigator.clone();
 
     rsx! {
-        section {
-            style: "display: flex; flex-direction: column; gap: 20px;",
-            div {
-                style: "display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: flex-end;",
-                div {
-                    style: "display: flex; flex-direction: column; gap: 10px;",
-                    h2 {
-                        style: "margin: 0; color: #10201b; font-size: 2rem;",
-                        "Disk"
-                    }
-                    p {
-                        style: "margin: 0; color: #51625a; max-width: 60ch;",
-                        "Choose the whole disk that should be erased and installed."
-                    }
-                }
-                TextButton {
-                    onpress: move |_| refresh_disks(state),
-                    "Refresh disks"
-                }
+        PageSection {
+            PageIntro {
+                title: "Disk".to_string(),
+                description: "Choose the whole disk that should be erased and installed.".to_string(),
+            }
+            UiButton {
+                variant: ButtonVariant::Ghost,
+                onpress: move |_: MouseEvent| refresh_disks(state),
+                class: "self-start".to_string(),
+                "Refresh disks"
             }
             if snapshot.ui.available_disks.is_empty() {
-                div {
-                    style: "padding: 18px; border-radius: 22px; background: #f4faf6; color: #51625a; border: 1px solid #dbe7e0;",
-                    "No disks loaded yet. Press \"Refresh disks\" to inspect available devices."
+                NoticePanel {
+                    Typography {
+                        tag: TypographyTag::P,
+                        class: "m-0".to_string(),
+                        "No disks loaded yet. Press \"Refresh disks\" to inspect available devices."
+                    }
                 }
             } else {
-                div {
-                    style: "display: grid; gap: 16px;",
+                Flexbox {
+                    direction: "flex-col".to_string(),
+                    gap: "gap-4".to_string(),
                     for disk in snapshot.ui.available_disks.iter().cloned() {
                         {
                             let disk_path = disk.path.clone();
@@ -62,20 +64,27 @@ pub fn DiskPage(mut state: Signal<InstallerState>) -> Element {
                 }
             }
             if !snapshot.config.target_disk.is_empty() {
-                p {
-                    style: "margin: 0; color: #275a4f; font-weight: 600;",
+                Typography {
+                    tag: TypographyTag::P,
+                    class: "m-0 text-sm font-semibold text-emerald-700".to_string(),
                     "Current selection: {snapshot.config.target_disk}"
                 }
             }
             ValidationList { messages: validation_errors }
-            div {
-                style: "display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;",
-                TextButton {
-                    onpress: move |_| navigate_to(state, InstallerStep::User),
+            ActionRow {
+                UiButton {
+                    variant: ButtonVariant::Ghost,
+                    onpress: move |_: MouseEvent| {
+                        back_navigator.push(Route::User {});
+                    },
                     "Back"
                 }
-                Button {
-                    onpress: move |_| continue_from_disk(state),
+                UiButton {
+                    onpress: move |_: MouseEvent| {
+                        if continue_from_disk(state) {
+                            continue_navigator.push(Route::Summary {});
+                        }
+                    },
                     "Continue"
                 }
             }
