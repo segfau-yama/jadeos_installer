@@ -1,4 +1,3 @@
-use dioxus::prelude::{use_context, Signal};
 use serde::{Deserialize, Serialize};
 
 use crate::api::disk::DiskDeviceInfo;
@@ -74,27 +73,4 @@ impl Default for InstallRuntime {
             install_log: Vec::new(),
         }
     }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct InstallerState {
-    pub ui: InstallerUiState,
-    pub config: InstallerConfig,
-    pub user: UserDraft,
-    pub runtime: InstallRuntime,
-}
-
-impl Default for InstallerState {
-    fn default() -> Self {
-        Self {
-            ui: InstallerUiState::default(),
-            config: InstallerConfig::default(),
-            user: UserDraft::default(),
-            runtime: InstallRuntime::default(),
-        }
-    }
-}
-
-pub fn use_installer_state() -> Signal<InstallerState> {
-    use_context()
 }

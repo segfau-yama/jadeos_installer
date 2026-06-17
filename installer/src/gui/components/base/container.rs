@@ -11,7 +11,7 @@ pub struct ContainerProps {
 pub fn Container(props: ContainerProps) -> Element {
     rsx! {
         div {
-            class: "mx-auto w-full {props.class}",
+            class: "mx-auto {props.class}",
             {props.children}
         }
     }

@@ -1,5 +1,6 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+#[cfg(not(all(feature = "web", not(feature = "desktop"))))]
 use std::process::Command;
 
 use serde::de::{Deserializer, Error as DeError};
@@ -70,6 +71,12 @@ struct LsblkDevice {
     mountpoints: Vec<Option<String>>,
 }
 
+#[cfg(all(feature = "web", not(feature = "desktop")))]
+pub fn list_disks() -> Result<Vec<DiskDeviceInfo>, DiskError> {
+    crate::web_api::disk::list_disks()
+}
+
+#[cfg(not(all(feature = "web", not(feature = "desktop"))))]
 pub fn list_disks() -> Result<Vec<DiskDeviceInfo>, DiskError> {
     let output = Command::new("lsblk")
         .args([

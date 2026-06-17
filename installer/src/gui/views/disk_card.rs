@@ -2,8 +2,8 @@ use dioxus::prelude::*;
 
 use crate::api::disk::DiskDeviceInfo;
 use crate::gui::components::{
-    BadgeTone, ButtonVariant, Card, CardBody, CardFooter, CardHeader, Flexbox, StatusBadge,
-    Typography, TypographyTag, UiButton,
+    BadgeTone, ButtonVariant, Card, CardBody, CardFooter, CardHeader, Col, Flexbox, Row,
+    StatusBadge, Typography, TypographyTag, UiButton,
 };
 
 use super::{
@@ -39,8 +39,9 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
                     items: "items-start".to_string(),
                     justify: "justify-between".to_string(),
                     gap: "gap-4".to_string(),
-                    div {
-                        class: "flex flex-col gap-1",
+                    Flexbox {
+                        direction: "flex-col".to_string(),
+                        gap: "gap-1".to_string(),
                         Typography {
                             tag: TypographyTag::H3,
                             class: "m-0 text-xl font-semibold text-jade-950".to_string(),
@@ -80,22 +81,29 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
             }
             CardBody {
                 class: "pt-0".to_string(),
-                div {
-                    class: "grid grid-cols-1 gap-3 sm:grid-cols-3",
-                    InfoTile {
-                        label: "Size".to_string(),
-                        value: format!("{:.1} GiB", disk.size_gib()),
-                        class: "rounded-[1.25rem] px-4 py-3".to_string(),
+                Row {
+                    cols: "grid-cols-1 sm:grid-cols-3".to_string(),
+                    gap: "gap-3".to_string(),
+                    Col {
+                        InfoTile {
+                            label: "Size".to_string(),
+                            value: format!("{:.1} GiB", disk.size_gib()),
+                            class: "rounded-[1.25rem] px-4 py-3".to_string(),
+                        }
                     }
-                    InfoTile {
-                        label: "Removable".to_string(),
-                        value: removable_label.to_string(),
-                        class: "rounded-[1.25rem] px-4 py-3".to_string(),
+                    Col {
+                        InfoTile {
+                            label: "Removable".to_string(),
+                            value: removable_label.to_string(),
+                            class: "rounded-[1.25rem] px-4 py-3".to_string(),
+                        }
                     }
-                    InfoTile {
-                        label: "Mounted".to_string(),
-                        value: mounted_label.to_string(),
-                        class: "rounded-[1.25rem] px-4 py-3".to_string(),
+                    Col {
+                        InfoTile {
+                            label: "Mounted".to_string(),
+                            value: mounted_label.to_string(),
+                            class: "rounded-[1.25rem] px-4 py-3".to_string(),
+                        }
                     }
                 }
                 if disk.mounted {

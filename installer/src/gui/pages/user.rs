@@ -4,29 +4,28 @@ use crate::gui::components::{
     ButtonVariant, Card, CardBody, CardHeader, Col, Row, TextInput, Typography, TypographyTag,
     UiButton,
 };
-use crate::gui::controller::continue_from_user;
-use crate::gui::routes::Route;
-use crate::gui::state::use_installer_state;
-use crate::gui::validation::user_validation_errors;
+use crate::gui::routes::{next_route, previous_route, Route};
+use crate::gui::state::{InstallerConfig, InstallerUiState, UserDraft};
 use crate::gui::views::{ActionRow, PageIntro, PageSection, ValidationList};
 
 #[component]
 pub fn UserPage() -> Element {
-    let mut state = use_installer_state();
-    let snapshot = state();
-    let validation_errors = user_validation_errors(&snapshot.config, &snapshot.user);
+    let mut config = use_context::<Signal<InstallerConfig>>();
+    let mut user = use_context::<Signal<UserDraft>>();
+    let mut ui = use_context::<Signal<InstallerUiState>>();
+    let config_snapshot = config();
+    let user_snapshot = user();
+    let validation_errors = user_validation_errors(&config_snapshot, &user_snapshot);
     let navigator = use_navigator();
     let back_navigator = navigator.clone();
     let continue_navigator = navigator.clone();
 
     rsx! {
         PageSection {
-            class: "max-w-5xl".to_string(),
             gap: "gap-6".to_string(),
             PageIntro {
                 title: "User".to_string(),
                 description: "Create the normal user for the installed system. This scaffold keeps password data in memory only.".to_string(),
-                class: "max-w-2xl".to_string(),
             }
             Card {
                 color: "bg-white/75".to_string(),
@@ -38,66 +37,62 @@ pub fn UserPage() -> Element {
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: "m-0 max-w-2xl text-base leading-7 text-emerald-900/70".to_string(),
+                        class: "m-0 text-base leading-7 text-emerald-900/70".to_string(),
                         "Keep the system identity and login credentials compact and easy to scan."
                     }
                 }
                 CardBody {
                     class: "pt-0".to_string(),
                     Row {
-                        cols: "grid-cols-1 xl:grid-cols-2".to_string(),
+                        cols: "grid-cols-1 md:grid-cols-2".to_string(),
                         gap: "gap-5 md:gap-6".to_string(),
                         Col {
                             TextInput {
                                 label: "Hostname".to_string(),
-                                value: snapshot.config.hostname.clone(),
+                                value: config_snapshot.hostname.clone(),
                                 supporting_text: Some("Used for the installed system hostname.".to_string()),
                                 autocomplete: Some("off".to_string()),
                                 onchange: move |event: FormEvent| {
-                                    let mut draft = state.write();
-                                    draft.config.hostname = event.value();
-                                    draft.ui.error_message = None;
+                                    config.write().hostname = event.value();
+                                    ui.write().error_message = None;
                                 }
                             }
                         }
                         Col {
                             TextInput {
                                 label: "Username".to_string(),
-                                value: snapshot.config.username.clone(),
+                                value: config_snapshot.username.clone(),
                                 supporting_text: Some("This becomes the main login account.".to_string()),
                                 autocomplete: Some("username".to_string()),
                                 onchange: move |event: FormEvent| {
-                                    let mut draft = state.write();
-                                    draft.config.username = event.value();
-                                    draft.ui.error_message = None;
+                                    config.write().username = event.value();
+                                    ui.write().error_message = None;
                                 }
                             }
                         }
                         Col {
                             TextInput {
                                 label: "Password".to_string(),
-                                value: snapshot.user.password.clone(),
+                                value: user_snapshot.password.clone(),
                                 input_type: Some("password".to_string()),
                                 autocomplete: Some("new-password".to_string()),
                                 supporting_text: Some("Kept only in memory in this scaffold.".to_string()),
                                 onchange: move |event: FormEvent| {
-                                    let mut draft = state.write();
-                                    draft.user.password = event.value();
-                                    draft.ui.error_message = None;
+                                    user.write().password = event.value();
+                                    ui.write().error_message = None;
                                 }
                             }
                         }
                         Col {
                             TextInput {
                                 label: "Password confirmation".to_string(),
-                                value: snapshot.user.password_confirmation.clone(),
+                                value: user_snapshot.password_confirmation.clone(),
                                 input_type: Some("password".to_string()),
                                 autocomplete: Some("new-password".to_string()),
                                 supporting_text: Some("Repeat the same password to continue.".to_string()),
                                 onchange: move |event: FormEvent| {
-                                    let mut draft = state.write();
-                                    draft.user.password_confirmation = event.value();
-                                    draft.ui.error_message = None;
+                                    user.write().password_confirmation = event.value();
+                                    ui.write().error_message = None;
                                 }
                             }
                         }
@@ -109,14 +104,18 @@ pub fn UserPage() -> Element {
                 UiButton {
                     variant: ButtonVariant::Ghost,
                     onpress: move |_: MouseEvent| {
-                        back_navigator.push(Route::Welcome {});
+                        if let Some(route) = previous_route(&Route::User {}) {
+                            back_navigator.push(route);
+                        }
                     },
                     "Back"
                 }
                 UiButton {
                     onpress: move |_: MouseEvent| {
-                        if continue_from_user(state) {
-                            continue_navigator.push(Route::Disk {});
+                        if continue_from_user(config, user, ui) {
+                            if let Some(route) = next_route(&Route::User {}) {
+                                continue_navigator.push(route);
+                            }
                         }
                     },
                     "Continue"
@@ -124,4 +123,42 @@ pub fn UserPage() -> Element {
             }
         }
     }
+}
+
+fn continue_from_user(
+    config: Signal<InstallerConfig>,
+    user: Signal<UserDraft>,
+    mut ui: Signal<InstallerUiState>,
+) -> bool {
+    let errors = user_validation_errors(&config(), &user());
+
+    if errors.is_empty() {
+        ui.write().error_message = None;
+        true
+    } else {
+        ui.write().error_message = Some(errors.join(" "));
+        false
+    }
+}
+
+fn user_validation_errors(config: &InstallerConfig, user: &UserDraft) -> Vec<String> {
+    let mut errors = Vec::new();
+
+    if config.hostname.trim().is_empty() {
+        errors.push("Hostname is required.".to_string());
+    }
+
+    if config.username.trim().is_empty() {
+        errors.push("Username is required.".to_string());
+    }
+
+    if user.password.trim().is_empty() {
+        errors.push("Password is required.".to_string());
+    }
+
+    if user.password != user.password_confirmation {
+        errors.push("Password confirmation must match.".to_string());
+    }
+
+    errors
 }

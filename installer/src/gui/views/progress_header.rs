@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::gui::components::{Flexbox, Typography, TypographyTag};
-use crate::gui::routes::{ordered_routes, route_index, route_label, Route};
+use crate::gui::routes::{ordered_routes, route_index, Route};
 
 #[derive(PartialEq, Clone, Props)]
 struct ProgressStepProps {
@@ -23,7 +23,7 @@ fn ProgressStep(props: ProgressStepProps) -> Element {
     } = props;
     let navigator = use_navigator();
     let step_class = if is_selected {
-        "border-emerald-600/40 bg-emerald-100 text-emerald-800 shadow-[0_14px_34px_rgba(6,95,70,0.12)]"
+        "border-emerald-600/40 bg-emerald-100 text-emerald-800 shadow"
     } else if is_reached {
         "border-emerald-900/10 bg-white text-emerald-900 hover:border-emerald-400/40 hover:bg-emerald-50"
     } else {
@@ -73,14 +73,13 @@ pub fn ProgressHeader(active_route: Route) -> Element {
                 items: "items-center".to_string(),
                 wrap: "flex-wrap".to_string(),
                 gap: "gap-3".to_string(),
-                class: "w-full".to_string(),
                 for route in ordered_routes() {
                     ProgressStep {
-                        key: "{route_label(&route)}",
+                        key: "{route.label()}",
                         route: route.clone(),
                         index: route_index(&route),
-                        label: route_label(&route).to_string(),
-                        is_selected: route == active_route,
+                        label: route.label().to_string(),
+                        is_selected: *route == active_route,
                         is_reached: route_index(&route) <= active_index,
                     }
                 }

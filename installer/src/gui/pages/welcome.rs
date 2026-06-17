@@ -1,9 +1,14 @@
 use dioxus::prelude::*;
 
 use crate::gui::components::{BadgeTone, Flexbox, StatusBadge, UiButton};
-use crate::gui::presentation::WELCOME_BULLETS;
-use crate::gui::routes::Route;
+use crate::gui::routes::{next_route, Route};
 use crate::gui::views::{PageIntro, PageSection};
+
+const WELCOME_BULLETS: [&str; 3] = [
+    "The selected disk will be fully erased.",
+    "MVP support is limited to UEFI + GPT + ext4.",
+    "Manual partitioning and encryption are intentionally out of scope.",
+];
 
 #[component]
 pub fn WelcomePage() -> Element {
@@ -28,7 +33,9 @@ pub fn WelcomePage() -> Element {
             }
             UiButton {
                 onpress: move |_: MouseEvent| {
-                    navigator.push(Route::User {});
+                    if let Some(route) = next_route(&Route::Welcome {}) {
+                        navigator.push(route);
+                    }
                 },
                 class: "self-start".to_string(),
                 "Start"

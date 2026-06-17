@@ -1,23 +1,23 @@
 use dioxus::prelude::*;
 
+use crate::api::install::InstallPhase;
 use crate::gui::components::{
     BadgeTone, ButtonVariant, Flexbox, ProgressBar, StatusBadge, Typography, TypographyTag,
     UiButton,
 };
-use crate::gui::presentation::install_phases;
-use crate::gui::routes::Route;
-use crate::gui::state::use_installer_state;
+use crate::gui::routes::{previous_route, Route};
+use crate::gui::state::InstallRuntime;
 use crate::gui::views::{ActionRow, NoticePanel, PageIntro, PageSection};
 
 #[component]
 pub fn InstallPage() -> Element {
-    let state = use_installer_state();
-    let snapshot = state();
+    let runtime = use_context::<Signal<InstallRuntime>>();
+    let runtime_snapshot = runtime();
     let phases = install_phases();
     let navigator = use_navigator();
     let current_index = phases
         .iter()
-        .position(|phase| *phase == snapshot.runtime.install_phase)
+        .position(|phase| *phase == runtime_snapshot.install_phase)
         .unwrap_or(0);
     let progress = (((current_index + 1) as f32 / phases.len() as f32) * 100.).round() as u8;
 
@@ -35,7 +35,7 @@ pub fn InstallPage() -> Element {
                     gap: "gap-3".to_string(),
                     StatusBadge {
                         tone: BadgeTone::Accent,
-                        "{snapshot.runtime.install_phase.label()}"
+                        "{runtime_snapshot.install_phase.label()}"
                     }
                     Typography {
                         tag: TypographyTag::P,
@@ -47,8 +47,7 @@ pub fn InstallPage() -> Element {
                     tag: TypographyTag::P,
                     class: "mt-3 text-base font-semibold text-jade-950".to_string(),
                     {
-                        snapshot
-                            .runtime
+                        runtime_snapshot
                             .current_command
                             .clone()
                             .unwrap_or_else(|| "No command is running.".to_string())
@@ -69,7 +68,7 @@ pub fn InstallPage() -> Element {
                 for phase in phases {
                     StatusBadge {
                         key: "{phase.label()}",
-                        tone: if phase == snapshot.runtime.install_phase {
+                        tone: if phase == runtime_snapshot.install_phase {
                             BadgeTone::Accent
                         } else {
                             BadgeTone::Muted
@@ -83,7 +82,7 @@ pub fn InstallPage() -> Element {
                 class: "m-0 text-lg font-semibold text-jade-950".to_string(),
                 "Install log"
             }
-            if snapshot.runtime.install_log.is_empty() {
+            if runtime_snapshot.install_log.is_empty() {
                 Typography {
                     tag: TypographyTag::P,
                     class: "m-0 text-base text-emerald-900/70".to_string(),
@@ -92,14 +91,16 @@ pub fn InstallPage() -> Element {
             } else {
                 pre {
                     class: "m-0 overflow-x-auto rounded-[1.5rem] bg-jade-950 px-5 py-4 text-sm leading-6 text-emerald-50",
-                    "{snapshot.runtime.install_log.join(\"\\n\")}"
+                    "{runtime_snapshot.install_log.join(\"\\n\")}"
                 }
             }
             ActionRow {
                 UiButton {
                     variant: ButtonVariant::Ghost,
                     onpress: move |_: MouseEvent| {
-                        navigator.push(Route::Summary {});
+                        if let Some(route) = previous_route(&Route::Install {}) {
+                            navigator.push(route);
+                        }
                     },
                     "Back to summary"
                 }
@@ -111,4 +112,17 @@ pub fn InstallPage() -> Element {
             }
         }
     }
+}
+
+fn install_phases() -> [InstallPhase; 8] {
+    [
+        InstallPhase::Validate,
+        InstallPhase::Partition,
+        InstallPhase::Format,
+        InstallPhase::Mount,
+        InstallPhase::GenerateConfig,
+        InstallPhase::InstallSystem,
+        InstallPhase::SetPassword,
+        InstallPhase::Finish,
+    ]
 }

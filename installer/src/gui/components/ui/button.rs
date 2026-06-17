@@ -17,7 +17,7 @@ pub fn UiButton(
 ) -> Element {
     let variant_class = match variant {
         ButtonVariant::Primary => {
-            "border border-transparent bg-emerald-700 text-white shadow-[0_18px_36px_rgba(6,95,70,0.24)] hover:bg-emerald-800 disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+            "border border-transparent bg-emerald-700 text-white shadow hover:bg-emerald-800 disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
         }
         ButtonVariant::Secondary => {
             "border border-emerald-900/10 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500"

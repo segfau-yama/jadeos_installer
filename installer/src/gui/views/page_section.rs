@@ -15,7 +15,7 @@ pub struct PageSectionProps {
 pub fn PageSection(props: PageSectionProps) -> Element {
     rsx! {
         section {
-            class: "w-full {props.class}",
+            class: "{props.class}",
             Flexbox {
                 direction: "flex-col".to_string(),
                 gap: props.gap,

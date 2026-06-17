@@ -1,14 +1,12 @@
 use dioxus::prelude::*;
 
 use crate::gui::pages::{DiskPage, InstallPage, SummaryPage, UserPage, WelcomePage};
-use crate::gui::state::InstallerState;
-use crate::gui::validation::{disk_validation_errors, user_validation_errors};
-use crate::gui::views::AppShell;
+use crate::gui::views::RouteShell;
 
 #[rustfmt::skip]
 #[derive(Clone, Debug, PartialEq, Routable)]
 pub enum Route {
-    #[layout(AppShell)]
+    #[layout(RouteShell)]
         #[route("/", WelcomePage)]
         Welcome {},
         #[route("/user", UserPage)]
@@ -21,69 +19,43 @@ pub enum Route {
         Install {},
 }
 
-pub fn ordered_routes() -> [Route; 5] {
-    [
-        Route::Welcome {},
-        Route::User {},
-        Route::Disk {},
-        Route::Summary {},
-        Route::Install {},
-    ]
+const ORDERED_ROUTES: [Route; 5] = [
+    Route::Welcome {},
+    Route::User {},
+    Route::Disk {},
+    Route::Summary {},
+    Route::Install {},
+];
+
+impl Route {
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Welcome {} => "Welcome",
+            Self::User {} => "User",
+            Self::Disk {} => "Disk",
+            Self::Summary {} => "Summary",
+            Self::Install {} => "Install",
+        }
+    }
 }
 
-pub fn route_label(route: &Route) -> &'static str {
-    match route {
-        Route::Welcome {} => "Welcome",
-        Route::User {} => "User",
-        Route::Disk {} => "Disk",
-        Route::Summary {} => "Summary",
-        Route::Install {} => "Install",
-    }
+pub fn ordered_routes() -> &'static [Route; 5] {
+    &ORDERED_ROUTES
 }
 
 pub fn route_index(route: &Route) -> usize {
-    match route {
-        Route::Welcome {} => 0,
-        Route::User {} => 1,
-        Route::Disk {} => 2,
-        Route::Summary {} => 3,
-        Route::Install {} => 4,
-    }
+    ordered_routes()
+        .iter()
+        .position(|current| current == route)
+        .unwrap_or(0)
 }
 
-pub fn guard_route(state: &InstallerState, requested: Route) -> Route {
-    let user_ready = user_validation_errors(&state.config, &state.user).is_empty();
-    let disk_ready = disk_validation_errors(&state.config).is_empty();
+pub fn next_route(route: &Route) -> Option<Route> {
+    ordered_routes().get(route_index(route) + 1).cloned()
+}
 
-    match requested {
-        Route::Welcome {} => Route::Welcome {},
-        Route::User {} => Route::User {},
-        Route::Disk {} => {
-            if user_ready {
-                Route::Disk {}
-            } else {
-                Route::User {}
-            }
-        }
-        Route::Summary {} => {
-            if !user_ready {
-                Route::User {}
-            } else if !disk_ready {
-                Route::Disk {}
-            } else {
-                Route::Summary {}
-            }
-        }
-        Route::Install {} => {
-            if !user_ready {
-                Route::User {}
-            } else if !disk_ready {
-                Route::Disk {}
-            } else if state.runtime.install_plan.is_some() {
-                Route::Install {}
-            } else {
-                Route::Summary {}
-            }
-        }
-    }
+pub fn previous_route(route: &Route) -> Option<Route> {
+    route_index(route)
+        .checked_sub(1)
+        .and_then(|index| ordered_routes().get(index).cloned())
 }
