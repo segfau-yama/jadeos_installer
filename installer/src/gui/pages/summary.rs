@@ -1,7 +1,13 @@
 use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::sync::mpsc;
 
-use crate::api::install::{generate_install_plan, preview_install_plan, run_install_plan};
+use crate::api::install::{generate_install_plan, preview_install_plan};
+#[cfg(target_arch = "wasm32")]
+use crate::api::install::{run_install_plan, InstallationReport};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::api::install::{run_install_plan_with_progress, InstallationReport};
 use crate::gui::components::{
     BadgeTone, ButtonVariant, Card, CardBody, Col, Flexbox, Row, StatusBadge, Theme, TogglePill,
     Typography, TypographyTag, UiButton,
@@ -33,6 +39,8 @@ pub fn SummaryPage() -> Element {
     let user = installer.user;
     let mut ui = installer.ui;
     let runtime = installer.runtime;
+    #[cfg(not(target_arch = "wasm32"))]
+    let install_progress = installer.install_progress;
     let config_snapshot = config();
     let user_snapshot = user();
     let plan_preview = preview_plan(&config_snapshot);
@@ -80,8 +88,8 @@ pub fn SummaryPage() -> Element {
                 }
             }
             Card {
-                color: theme.color(ThemeColor::WarningBg).to_string(),
-                class: theme.color(ThemeColor::WarningBorder).to_string(),
+                color: theme.bg(ThemeColor::Warning).to_string(),
+                class: theme.border(ThemeColor::Warning).to_string(),
                 shadow: "shadow-none".to_string(),
                 rounded: "rounded-[1.75rem]".to_string(),
                 CardBody {
@@ -96,7 +104,7 @@ pub fn SummaryPage() -> Element {
                         }
                         Typography {
                             tag: TypographyTag::P,
-                            class: format!("m-0 text-sm font-medium {}", theme.color(ThemeColor::WarningText)),
+                            class: format!("m-0 text-sm font-medium {}", theme.text(ThemeColor::Warning)),
                             "{ERASE_CONFIRMATION_COPY}"
                         }
                     }
@@ -129,7 +137,12 @@ pub fn SummaryPage() -> Element {
                 UiButton {
                     disabled: !install_ready,
                     onpress: move |_: MouseEvent| {
-                        if start_install(config, user, ui, runtime) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        let started = start_install(config, user, ui, runtime, install_progress);
+                        #[cfg(target_arch = "wasm32")]
+                        let started = start_install(config, user, ui, runtime);
+
+                        if started {
                             if let Some(route) = next_route(&Route::Summary {}) {
                                 install_navigator.push(route);
                             }
@@ -146,6 +159,60 @@ fn preview_plan(config: &InstallerConfig) -> Option<crate::api::install::Install
     preview_install_plan(config).ok()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+fn start_install(
+    config: Signal<InstallerConfig>,
+    user: Signal<UserDraft>,
+    mut ui: Signal<InstallerUiState>,
+    mut runtime: Signal<InstallRuntime>,
+    mut install_progress: Signal<Option<mpsc::UnboundedReceiver<InstallationReport>>>,
+) -> bool {
+    let summary_errors = summary_validation_errors(&config(), &user());
+
+    if !summary_errors.is_empty() {
+        ui.write().error_message = Some(summary_errors.join(" "));
+        return false;
+    }
+
+    let config_snapshot = config();
+    let user_snapshot = user();
+    let install_config = config_snapshot.clone();
+    let password = user_snapshot.password.clone();
+    match generate_install_plan(&install_config) {
+        Ok(plan) => {
+            {
+                let mut runtime_state = runtime.write();
+                runtime_state.install_plan = Some(plan.clone());
+                runtime_state.install_phase = crate::api::install::InstallPhase::Validate;
+                runtime_state.current_command =
+                    Some("Starting install in the background...".to_string());
+                runtime_state.install_log = vec![
+                    format!(
+                        "Queued install for {} on {}",
+                        install_config.hostname, install_config.target_disk
+                    ),
+                    "Switching to the install page and starting background execution.".to_string(),
+                ];
+            }
+            ui.write().error_message = None;
+            let (progress_tx, progress_rx) = mpsc::unbounded_channel::<InstallationReport>();
+            *install_progress.write() = Some(progress_rx);
+            std::thread::spawn(move || {
+                let _ =
+                    run_install_plan_with_progress(&install_config, &password, &plan, |report| {
+                        let _ = progress_tx.send(report.clone());
+                    });
+            });
+            true
+        }
+        Err(error) => {
+            ui.write().error_message = Some(error.to_string());
+            false
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
 fn start_install(
     config: Signal<InstallerConfig>,
     user: Signal<UserDraft>,
@@ -163,22 +230,28 @@ fn start_install(
     let user_snapshot = user();
     let install_config = config_snapshot.clone();
     let password = user_snapshot.password.clone();
-    match generate_install_plan(&install_config) {
-        Ok(plan) => {
-            let report = run_install_plan(&install_config, &password, &plan);
-            let mut runtime_state = runtime.write();
-            runtime_state.install_plan = Some(plan);
-            runtime_state.install_phase = report.final_phase;
-            runtime_state.current_command = report.current_command;
-            runtime_state.install_log = report.log;
-            ui.write().error_message = report.error_message;
-            true
-        }
-        Err(error) => {
-            ui.write().error_message = Some(error.to_string());
-            false
-        }
-    }
+    let Ok(plan) = generate_install_plan(&install_config) else {
+        ui.write().error_message = Some("failed to generate install plan".to_string());
+        return false;
+    };
+    let report = run_install_plan(&install_config, &password, &plan);
+    update_runtime_state(&mut runtime, &mut ui, &plan, report);
+    true
+}
+
+#[cfg(target_arch = "wasm32")]
+fn update_runtime_state(
+    runtime: &mut Signal<InstallRuntime>,
+    ui: &mut Signal<InstallerUiState>,
+    plan: &crate::api::install::InstallPlan,
+    report: InstallationReport,
+) {
+    let mut runtime_state = runtime.write();
+    runtime_state.install_plan = Some(plan.clone());
+    runtime_state.install_phase = report.final_phase;
+    runtime_state.current_command = report.current_command;
+    runtime_state.install_log = report.log;
+    ui.write().error_message = report.error_message;
 }
 
 fn summary_validation_errors(config: &InstallerConfig, user: &UserDraft) -> Vec<String> {

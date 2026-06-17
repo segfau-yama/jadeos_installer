@@ -19,16 +19,16 @@ pub fn InfoTile(props: InfoTileProps) -> Element {
         div {
             class: format!(
                 "rounded-[1.5rem] border {} {} px-5 py-4 {}",
-                theme.color(ThemeColor::Border), theme.color(ThemeColor::SurfaceAccent), props.class
+                theme.border(ThemeColor::Surface), theme.bg(ThemeColor::Accent), props.class
             ),
             Typography {
                 tag: TypographyTag::P,
-                class: format!("m-0 text-xs font-bold uppercase tracking-[0.12em] {}", theme.color(ThemeColor::TextMuted)),
+                class: format!("m-0 text-xs font-bold uppercase tracking-[0.12em] {}", theme.text(ThemeColor::Muted)),
                 "{props.label}"
             }
             Typography {
                 tag: TypographyTag::P,
-                class: format!("mt-2 text-base font-semibold {}", theme.color(ThemeColor::Text)),
+                class: format!("mt-2 text-base font-semibold {}", theme.text(ThemeColor::Text)),
                 "{props.value}"
             }
         }

@@ -31,19 +31,19 @@ pub fn UserPage() -> Element {
                 description: "Create the normal user for the installed system. This scaffold keeps password data in memory only.".to_string(),
             }
             Card {
-                color: theme.color(ThemeColor::Surface).to_string(),
+                color: theme.bg(ThemeColor::Surface).to_string(),
                 CardHeader {
                     Typography {
                         tag: TypographyTag::P,
                         class: format!(
                             "m-0 text-xs font-bold uppercase tracking-[0.16em] {}",
-                            theme.color(ThemeColor::TextMuted)
+                            theme.text(ThemeColor::Muted)
                         ),
                         "Account setup"
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-base leading-7 {}", theme.color(ThemeColor::TextMuted)),
+                        class: format!("m-0 text-base leading-7 {}", theme.text(ThemeColor::Muted)),
                         "Keep the system identity and login credentials compact and easy to scan."
                     }
                 }

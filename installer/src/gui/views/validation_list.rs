@@ -11,11 +11,11 @@ fn ValidationMessage(message: String) -> Element {
         div {
             class: format!(
                 "rounded-3xl border {} {} px-4 py-3",
-                theme.color(ThemeColor::BorderDanger), theme.color(ThemeColor::DangerBg)
+                theme.border(ThemeColor::Danger), theme.bg(ThemeColor::Danger)
             ),
             Typography {
                 tag: TypographyTag::P,
-                class: format!("m-0 text-sm font-medium {}", theme.color(ThemeColor::DangerText)),
+                class: format!("m-0 text-sm font-medium {}", theme.text(ThemeColor::Danger)),
                 "{message}"
             }
         }

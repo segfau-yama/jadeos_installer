@@ -19,7 +19,7 @@ pub fn ProgressBar(props: ProgressBarProps) -> Element {
     let percentage = props.percentage.min(100);
     let theme = use_context::<Theme>();
     let bar_class = if props.bar_class.is_empty() {
-        theme.color(ThemeColor::Progress).to_string()
+        theme.gradient(ThemeColor::Accent).to_string()
     } else {
         props.bar_class.clone()
     };
@@ -28,7 +28,7 @@ pub fn ProgressBar(props: ProgressBarProps) -> Element {
         div {
             class: format!(
                 "w-full overflow-hidden {} {} {}",
-                theme.color(ThemeColor::Track),
+                theme.track(ThemeColor::Accent),
                 props.rounded,
                 props.class
             ),

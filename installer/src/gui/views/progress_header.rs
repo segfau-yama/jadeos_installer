@@ -27,48 +27,48 @@ fn ProgressStep(props: ProgressStepProps) -> Element {
     let step_class = if is_selected {
         format!(
             "{} {} {} {}",
-            theme.color(ThemeColor::BorderAccent),
-            theme.color(ThemeColor::SurfaceAccent),
-            theme.color(ThemeColor::TextAccent),
+            theme.border(ThemeColor::Accent),
+            theme.bg(ThemeColor::Accent),
+            theme.text(ThemeColor::Accent),
             theme.shadow(ThemeShadow::Interactive)
         )
     } else if is_reached {
         format!(
             "{} {} {} {}",
-            theme.color(ThemeColor::Border),
-            theme.color(ThemeColor::Surface),
-            theme.color(ThemeColor::TextAccent),
+            theme.border(ThemeColor::Surface),
+            theme.bg(ThemeColor::Surface),
+            theme.text(ThemeColor::Accent),
             [
-                theme.color(ThemeColor::BorderHover),
-                theme.color(ThemeColor::SurfaceHover),
+                theme.hover_border(ThemeColor::Accent),
+                theme.hover_bg(ThemeColor::Surface),
             ]
             .join(" ")
         )
     } else {
         format!(
             "{} {} {}",
-            theme.color(ThemeColor::Border),
-            theme.color(ThemeColor::Surface),
-            theme.color(ThemeColor::TextDisabled)
+            theme.border(ThemeColor::Surface),
+            theme.bg(ThemeColor::Surface),
+            theme.text(ThemeColor::Muted)
         )
     };
     let circle_class = if is_selected {
         format!(
             "{} {}",
-            theme.color(ThemeColor::Accent),
-            theme.color(ThemeColor::TextInverse)
+            theme.fill(ThemeColor::Accent),
+            theme.text(ThemeColor::Inverse)
         )
     } else if is_reached {
         format!(
             "{} {}",
-            theme.color(ThemeColor::SurfaceAccent),
-            theme.color(ThemeColor::TextAccent)
+            theme.bg(ThemeColor::Accent),
+            theme.text(ThemeColor::Accent)
         )
     } else {
         format!(
             "{} {}",
-            theme.color(ThemeColor::SurfaceDisabled),
-            theme.color(ThemeColor::TextDisabled)
+            theme.bg(ThemeColor::Muted),
+            theme.text(ThemeColor::Muted)
         )
     };
 
@@ -79,7 +79,7 @@ fn ProgressStep(props: ProgressStepProps) -> Element {
             class: format!(
                 "inline-flex items-center gap-3 {} border px-4 py-3 text-left text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 {} focus-visible:ring-offset-2 disabled:cursor-not-allowed {}",
                 theme.radius(ThemeRadius::Pill),
-                theme.color(ThemeColor::FocusVisible),
+                theme.focus_visible(ThemeColor::Accent),
                 step_class
             ),
             onclick: move |_| {
@@ -113,7 +113,7 @@ pub fn ProgressHeader(active_route: Route) -> Element {
                 tag: TypographyTag::P,
                 class: format!(
                     "m-0 text-xs font-bold uppercase tracking-[0.16em] {}",
-                    theme.color(ThemeColor::TextMuted)
+                    theme.text(ThemeColor::Muted)
                 ),
                 "Progress"
             }

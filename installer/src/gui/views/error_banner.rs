@@ -20,7 +20,7 @@ pub fn ErrorBanner(message: Option<String>, on_dismiss: EventHandler<()>) -> Ele
                         tag: TypographyTag::P,
                         class: format!(
                             "m-0 text-xs font-bold uppercase tracking-[0.16em] {}",
-                            theme.color(ThemeColor::WarningText)
+                            theme.text(ThemeColor::Warning)
                         ),
                         "Installer notice"
                     }
@@ -28,13 +28,13 @@ pub fn ErrorBanner(message: Option<String>, on_dismiss: EventHandler<()>) -> Ele
                         tag: TypographyTag::H2,
                         class: format!(
                             "m-0 text-2xl font-semibold tracking-[-0.03em] {}",
-                            theme.color(ThemeColor::Text)
+                            theme.text(ThemeColor::Text)
                         ),
                         "Something needs attention"
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-base leading-7 {}", theme.color(ThemeColor::TextMuted)),
+                        class: format!("m-0 text-base leading-7 {}", theme.text(ThemeColor::Muted)),
                         "{message}"
                     }
                     Flexbox {

@@ -15,16 +15,16 @@ pub fn TogglePill(
     let selected_class = if selected {
         format!(
             "{} {} {}",
-            theme.color(ThemeColor::BorderAccent),
-            theme.color(ThemeColor::SurfaceAccent),
-            theme.color(ThemeColor::TextAccent)
+            theme.border(ThemeColor::Accent),
+            theme.bg(ThemeColor::Accent),
+            theme.text(ThemeColor::Accent)
         )
     } else {
         format!(
             "{} {} {}",
-            theme.color(ThemeColor::Border),
-            theme.color(ThemeColor::Surface),
-            theme.color(ThemeColor::TextAccent)
+            theme.border(ThemeColor::Surface),
+            theme.bg(ThemeColor::Surface),
+            theme.text(ThemeColor::Accent)
         )
     };
     let disabled_class = if disabled {
@@ -32,14 +32,14 @@ pub fn TogglePill(
     } else {
         format!(
             "cursor-pointer {} {}",
-            theme.color(ThemeColor::BorderHover),
-            theme.color(ThemeColor::SurfaceHover)
+            theme.hover_border(ThemeColor::Accent),
+            theme.hover_bg(ThemeColor::Surface)
         )
     };
     let dot_class = if selected {
-        theme.color(ThemeColor::Accent)
+        theme.fill(ThemeColor::Accent)
     } else {
-        theme.color(ThemeColor::AccentSoft)
+        theme.soft_fill(ThemeColor::Accent)
     };
 
     rsx! {
@@ -49,7 +49,7 @@ pub fn TogglePill(
             class: format!(
                 "inline-flex items-center gap-3 {} border px-4 py-2 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 {} focus-visible:ring-offset-2 {} {} {}",
                 theme.radius(ThemeRadius::Pill),
-                theme.color(ThemeColor::FocusVisible),
+                theme.focus_visible(ThemeColor::Accent),
                 selected_class,
                 disabled_class,
                 class

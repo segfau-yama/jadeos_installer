@@ -14,15 +14,15 @@ pub fn ModalDialog(is_visible: bool, children: Element) -> Element {
         Flexbox {
             items: "items-center".to_string(),
             justify: "justify-center".to_string(),
-            class: format!("fixed inset-0 z-50 {} px-4 py-8 backdrop-blur-sm", theme.color(ThemeColor::Overlay)),
+            class: format!("fixed inset-0 z-50 {} px-4 py-8 backdrop-blur-sm", theme.overlay()),
             Row {
                 cols: "grid-cols-1".to_string(),
                 gap: "gap-4".to_string(),
                 class: format!(
                     "{} border {} {} p-6 {}",
                     theme.radius(ThemeRadius::Dialog),
-                    theme.color(ThemeColor::Border),
-                    theme.color(ThemeColor::SurfaceRaised),
+                    theme.border(ThemeColor::Surface),
+                    theme.bg(ThemeColor::Surface),
                     theme.shadow(ThemeShadow::Overlay)
                 ),
                 {children}

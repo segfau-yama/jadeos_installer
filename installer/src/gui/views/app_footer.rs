@@ -14,7 +14,7 @@ pub fn AppFooter() -> Element {
                 gap: "gap-2".to_string(),
                 class: format!(
                     "border-t {} pt-4 {}",
-                    theme.color(ThemeColor::Border), theme.color(ThemeColor::TextMuted)
+                    theme.border(ThemeColor::Surface), theme.text(ThemeColor::Muted)
                 ),
                 Col {
                     Typography {

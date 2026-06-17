@@ -11,16 +11,20 @@ use crate::gui::views::{AppFooter, AppHeader, ErrorBanner};
 const TAILWIND_STYLES: &str = include_str!("../assets/tailwind.css");
 
 pub fn app() -> Element {
-    let theme = Theme::default();
+    let theme = Theme::light();
     let config = use_signal(InstallerConfig::default);
     let user = use_signal(UserDraft::default);
     let ui = use_signal(InstallerUiState::default);
     let runtime = use_signal(InstallRuntime::default);
+    #[cfg(not(target_arch = "wasm32"))]
+    let install_progress = use_signal(|| None);
     let installer = InstallerContext {
         config,
         user,
         ui,
         runtime,
+        #[cfg(not(target_arch = "wasm32"))]
+        install_progress,
     };
     use_context_provider(|| installer);
     let ui_snapshot = (installer.ui)();
@@ -33,7 +37,7 @@ pub fn app() -> Element {
         ThemeProvider {
             theme: theme,
             div {
-                class: format!("min-h-screen px-4 py-8 sm:px-6 lg:px-8 {}", theme.color(ThemeColor::Page)),
+                class: format!("min-h-screen px-4 py-8 sm:px-6 lg:px-8 {}", theme.bg(ThemeColor::Page)),
                 Container {
                     Row {
                         cols: "grid-cols-1".to_string(),

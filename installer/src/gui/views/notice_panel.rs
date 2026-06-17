@@ -27,20 +27,20 @@ pub fn NoticePanel(props: NoticePanelProps) -> Element {
         PanelTone::Muted => (
             format!(
                 "{} {} {}",
-                theme.color(ThemeColor::Border),
-                theme.color(ThemeColor::SurfaceAccent),
-                theme.color(ThemeColor::TextMuted)
+                theme.border(ThemeColor::Surface),
+                theme.bg(ThemeColor::Accent),
+                theme.text(ThemeColor::Muted)
             ),
-            theme.color(ThemeColor::TextAccent),
+            theme.text(ThemeColor::Accent),
         ),
         PanelTone::Warning => (
             format!(
                 "{} {} {}",
-                theme.color(ThemeColor::WarningBorder),
-                theme.color(ThemeColor::WarningBg),
-                theme.color(ThemeColor::WarningText)
+                theme.border(ThemeColor::Warning),
+                theme.bg(ThemeColor::Warning),
+                theme.text(ThemeColor::Warning)
             ),
-            theme.color(ThemeColor::WarningText),
+            theme.text(ThemeColor::Warning),
         ),
     };
 

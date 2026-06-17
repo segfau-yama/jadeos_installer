@@ -1,19 +1,34 @@
 use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
-use crate::api::install::InstallPhase;
+use crate::api::install::{InstallPhase, InstallationReport};
 use crate::gui::components::{
     BadgeTone, ButtonVariant, Flexbox, ProgressBar, StatusBadge, Theme, Typography, TypographyTag,
     UiButton,
 };
 use crate::gui::routes::{previous_route, Route};
-use crate::gui::state::InstallerContext;
+use crate::gui::state::{InstallRuntime, InstallerContext, InstallerUiState};
 use crate::gui::views::{ActionRow, NoticePanel, PageIntro, PageSection};
 
 #[component]
 pub fn InstallPage() -> Element {
-    let runtime = use_context::<InstallerContext>().runtime;
+    let installer = use_context::<InstallerContext>();
+    let mut runtime = installer.runtime;
+    #[cfg(not(target_arch = "wasm32"))]
+    let mut ui = installer.ui;
+    #[cfg(not(target_arch = "wasm32"))]
+    let mut install_progress = installer.install_progress;
     let theme = use_context::<Theme>();
+    #[cfg(not(target_arch = "wasm32"))]
+    use_future(move || async move {
+        let Some(mut progress_rx) = install_progress.write().take() else {
+            return;
+        };
+
+        while let Some(report) = progress_rx.recv().await {
+            apply_install_report(&mut runtime, &mut ui, report);
+        }
+    });
     let runtime_snapshot = runtime();
     let phases = install_phases();
     let navigator = use_navigator();
@@ -41,13 +56,13 @@ pub fn InstallPage() -> Element {
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-sm font-medium {}", theme.color(ThemeColor::TextMuted)),
+                        class: format!("m-0 text-sm font-medium {}", theme.text(ThemeColor::Muted)),
                         "Current phase"
                     }
                 }
                 Typography {
                     tag: TypographyTag::P,
-                    class: format!("mt-3 text-base font-semibold {}", theme.color(ThemeColor::Text)),
+                    class: format!("mt-3 text-base font-semibold {}", theme.text(ThemeColor::Text)),
                     {
                         runtime_snapshot
                             .current_command
@@ -81,21 +96,21 @@ pub fn InstallPage() -> Element {
             }
             Typography {
                 tag: TypographyTag::H3,
-                class: format!("m-0 text-lg font-semibold {}", theme.color(ThemeColor::Text)),
+                class: format!("m-0 text-lg font-semibold {}", theme.text(ThemeColor::Text)),
                 "Install log"
             }
             if runtime_snapshot.install_log.is_empty() {
                 Typography {
                     tag: TypographyTag::P,
-                    class: format!("m-0 text-base {}", theme.color(ThemeColor::TextMuted)),
+                    class: format!("m-0 text-base {}", theme.text(ThemeColor::Muted)),
                     "No log entries yet."
                 }
             } else {
                 pre {
                     class: format!(
                         "m-0 overflow-x-auto rounded-[1.5rem] {} px-5 py-4 text-sm leading-6 {}",
-                        theme.color(ThemeColor::SurfaceInverse),
-                        theme.color(ThemeColor::TextInverse)
+                        theme.bg(ThemeColor::Inverse),
+                        theme.text(ThemeColor::Inverse)
                     ),
                     "{runtime_snapshot.install_log.join(\"\\n\")}"
                 }
@@ -118,6 +133,18 @@ pub fn InstallPage() -> Element {
             }
         }
     }
+}
+
+fn apply_install_report(
+    runtime: &mut Signal<InstallRuntime>,
+    ui: &mut Signal<InstallerUiState>,
+    report: InstallationReport,
+) {
+    let mut runtime_state = runtime.write();
+    runtime_state.install_phase = report.final_phase;
+    runtime_state.current_command = report.current_command;
+    runtime_state.install_log = report.log;
+    ui.write().error_message = report.error_message;
 }
 
 fn install_phases() -> [InstallPhase; 8] {

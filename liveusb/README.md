@@ -24,8 +24,18 @@ liveusb/prebuilt-installer/
 
 ## ビルド
 
+まずビルド用 shell に入る。
+
 ```bash
-cd liveusb
+nix develop .#build
+```
+
+そのうえで installer か ISO をビルドする。
+
+```bash
+cd ../installer
+cargo build --release
+cd ../liveusb
 nix build .#iso
 ```
 

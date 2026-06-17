@@ -121,7 +121,7 @@ fn build_install_plan(
             description: "Mount the root filesystem".to_string(),
             argv: vec![
                 "mount".to_string(),
-                "/dev/disk/by-label/nixos".to_string(),
+                root_partition.clone(),
                 INSTALL_MOUNT_ROOT.to_string(),
             ],
             destructive: false,
@@ -141,7 +141,7 @@ fn build_install_plan(
             description: "Mount the EFI partition".to_string(),
             argv: vec![
                 "mount".to_string(),
-                "/dev/disk/by-label/boot".to_string(),
+                efi_partition.clone(),
                 format!("{INSTALL_MOUNT_ROOT}/boot"),
             ],
             destructive: false,

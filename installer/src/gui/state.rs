@@ -1,8 +1,10 @@
 use dioxus::prelude::Signal;
 use serde::{Deserialize, Serialize};
+#[cfg(not(target_arch = "wasm32"))]
+use tokio::sync::mpsc::UnboundedReceiver;
 
 use crate::api::disk::DiskDeviceInfo;
-use crate::api::install::{InstallPhase, InstallPlan};
+use crate::api::install::{InstallPhase, InstallPlan, InstallationReport};
 
 pub const INSTALLER_SCHEMA_VERSION: u32 = 1;
 
@@ -82,4 +84,6 @@ pub struct InstallerContext {
     pub user: Signal<UserDraft>,
     pub ui: Signal<InstallerUiState>,
     pub runtime: Signal<InstallRuntime>,
+    #[cfg(not(target_arch = "wasm32"))]
+    pub install_progress: Signal<Option<UnboundedReceiver<InstallationReport>>>,
 }

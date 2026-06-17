@@ -20,7 +20,7 @@ pub struct CardProps {
 pub fn Card(props: CardProps) -> Element {
     let theme = use_context::<Theme>();
     let color = if props.color.is_empty() {
-        theme.color(ThemeColor::Surface)
+        theme.bg(ThemeColor::Surface)
     } else {
         props.color.as_str()
     };
@@ -40,7 +40,7 @@ pub fn Card(props: CardProps) -> Element {
             direction: "flex-col".to_string(),
             class: format!(
                 "relative overflow-hidden border backdrop-blur-xl {} {} {} {} {}",
-                theme.color(ThemeColor::Border), color, shadow, rounded, props.class
+                theme.border(ThemeColor::Surface), color, shadow, rounded, props.class
             ),
             {props.children}
         }

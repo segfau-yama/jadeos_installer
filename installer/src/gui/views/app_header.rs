@@ -24,7 +24,7 @@ pub fn AppHeader() -> Element {
                             tag: TypographyTag::P,
                             class: format!(
                                 "m-0 text-xs font-bold uppercase tracking-[0.18em] {}",
-                                theme.color(ThemeColor::TextMuted)
+                                theme.text(ThemeColor::Muted)
                             ),
                             "Safety-first installer"
                         }
@@ -32,7 +32,7 @@ pub fn AppHeader() -> Element {
                             tag: TypographyTag::H1,
                             class: format!(
                                 "m-0 text-4xl font-bold tracking-[-0.04em] {} sm:text-5xl lg:text-6xl",
-                                theme.color(ThemeColor::Text)
+                                theme.text(ThemeColor::Text)
                             ),
                             "{APP_TITLE}"
                         }
@@ -41,7 +41,7 @@ pub fn AppHeader() -> Element {
                 Col {
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-base {} sm:text-lg", theme.color(ThemeColor::TextMuted)),
+                        class: format!("m-0 text-base {} sm:text-lg", theme.text(ThemeColor::Muted)),
                         "{APP_SUBTITLE}"
                     }
                 }

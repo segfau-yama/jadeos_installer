@@ -21,21 +21,21 @@ pub fn StatusBadge(
     let tone_class = match tone {
         BadgeTone::Muted => format!(
             "{} {} {}",
-            theme.color(ThemeColor::Border),
-            theme.color(ThemeColor::Surface),
-            theme.color(ThemeColor::TextAccent)
+            theme.border(ThemeColor::Surface),
+            theme.bg(ThemeColor::Surface),
+            theme.text(ThemeColor::Accent)
         ),
         BadgeTone::Accent | BadgeTone::Success => format!(
             "{} {} {}",
-            theme.color(ThemeColor::BorderAccent),
-            theme.color(ThemeColor::SurfaceAccent),
-            theme.color(ThemeColor::TextAccent)
+            theme.border(ThemeColor::Accent),
+            theme.bg(ThemeColor::Accent),
+            theme.text(ThemeColor::Accent)
         ),
         BadgeTone::Warning => format!(
             "{} {} {}",
-            theme.color(ThemeColor::WarningBorder),
-            theme.color(ThemeColor::WarningBg),
-            theme.color(ThemeColor::WarningText)
+            theme.border(ThemeColor::Warning),
+            theme.bg(ThemeColor::Warning),
+            theme.text(ThemeColor::Warning)
         ),
     };
 

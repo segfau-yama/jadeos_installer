@@ -28,9 +28,9 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
         Card {
             key: "{disk_path}",
             color: if is_selected {
-                theme.color(ThemeColor::SurfaceAccent).to_string()
+                theme.bg(ThemeColor::Accent).to_string()
             } else {
-                theme.color(ThemeColor::Surface).to_string()
+                theme.bg(ThemeColor::Surface).to_string()
             },
             shadow: "shadow-none".to_string(),
             rounded: "rounded-[1.75rem]".to_string(),
@@ -46,12 +46,12 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
                         gap: "gap-1".to_string(),
                         Typography {
                             tag: TypographyTag::H3,
-                            class: format!("m-0 text-xl font-semibold {}", theme.color(ThemeColor::Text)),
+                            class: format!("m-0 text-xl font-semibold {}", theme.text(ThemeColor::Text)),
                             "{disk_path}"
                         }
                         Typography {
                             tag: TypographyTag::P,
-                            class: format!("m-0 text-sm {}", theme.color(ThemeColor::TextMuted)),
+                            class: format!("m-0 text-sm {}", theme.text(ThemeColor::Muted)),
                             "{disk.model}"
                         }
                     }

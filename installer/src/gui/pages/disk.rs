@@ -67,7 +67,7 @@ pub fn DiskPage() -> Element {
             if !config_snapshot.target_disk.is_empty() {
                 Typography {
                     tag: TypographyTag::P,
-                    class: format!("m-0 text-sm font-semibold {}", theme.color(ThemeColor::TextAccent)),
+                    class: format!("m-0 text-sm font-semibold {}", theme.text(ThemeColor::Accent)),
                     "Current selection: {config_snapshot.target_disk}"
                 }
             }

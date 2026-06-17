@@ -25,7 +25,7 @@ pub fn PageIntro(props: PageIntroProps) -> Element {
                     tag: TypographyTag::H2,
                     class: format!(
                         "m-0 text-3xl font-semibold tracking-[-0.03em] {} sm:text-4xl",
-                        theme.color(ThemeColor::Text)
+                        theme.text(ThemeColor::Text)
                     ),
                     "{props.title}"
                 }
@@ -35,7 +35,7 @@ pub fn PageIntro(props: PageIntroProps) -> Element {
                     tag: TypographyTag::P,
                     class: format!(
                         "m-0 text-base leading-7 {} sm:text-lg",
-                        theme.color(ThemeColor::TextMuted)
+                        theme.text(ThemeColor::Muted)
                     ),
                     "{props.description}"
                 }

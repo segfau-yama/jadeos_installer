@@ -122,7 +122,6 @@ in
 
   isoImage = {
     volumeID = "JADEOS_INSTALLER";
-    squashfsCompression = "gzip -Xcompression-level 1";
   };
 
   system.nixos.tags = [

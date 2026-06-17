@@ -72,6 +72,22 @@ fn plan_contains_repository_clone_command() {
 }
 
 #[test]
+fn plan_mounts_selected_partitions_directly() {
+    let plan = generate_install_plan(&valid_config()).expect("valid config should produce a plan");
+    let commands = plan.rendered_commands();
+
+    assert!(commands
+        .iter()
+        .any(|command| command == "mount /dev/nvme0n1p2 /mnt"));
+    assert!(commands
+        .iter()
+        .any(|command| command == "mount /dev/nvme0n1p1 /mnt/boot"));
+    assert!(!commands
+        .iter()
+        .any(|command| command.contains("/dev/disk/by-label")));
+}
+
+#[test]
 fn summary_preview_can_be_created_before_erase_confirmation() {
     let preview = preview_install_plan(&config_with(|config| config.disk_erase_confirmed = false))
         .expect("summary should still be able to preview the plan");
