@@ -1,3 +1,4 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::gui::components::{Flexbox, Theme, Typography, TypographyTag};
@@ -26,18 +27,20 @@ pub fn NoticePanel(props: NoticePanelProps) -> Element {
         PanelTone::Muted => (
             format!(
                 "{} {} {}",
-                theme.colors.border_subtle,
-                theme.colors.surface_accent,
-                theme.colors.text_secondary
+                theme.color(ThemeColor::Border),
+                theme.color(ThemeColor::SurfaceAccent),
+                theme.color(ThemeColor::TextMuted)
             ),
-            theme.colors.accent_fg,
+            theme.color(ThemeColor::TextAccent),
         ),
         PanelTone::Warning => (
             format!(
                 "{} {} {}",
-                theme.colors.warning_border, theme.colors.warning_bg, theme.colors.warning_fg
+                theme.color(ThemeColor::WarningBorder),
+                theme.color(ThemeColor::WarningBg),
+                theme.color(ThemeColor::WarningText)
             ),
-            theme.colors.warning_fg,
+            theme.color(ThemeColor::WarningText),
         ),
     };
 

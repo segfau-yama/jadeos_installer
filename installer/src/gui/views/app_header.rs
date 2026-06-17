@@ -1,3 +1,4 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::gui::components::{Col, Flexbox, Row, Theme, Typography, TypographyTag};
@@ -23,7 +24,7 @@ pub fn AppHeader() -> Element {
                             tag: TypographyTag::P,
                             class: format!(
                                 "m-0 text-xs font-bold uppercase tracking-[0.18em] {}",
-                                theme.colors.text_muted
+                                theme.color(ThemeColor::TextMuted)
                             ),
                             "Safety-first installer"
                         }
@@ -31,7 +32,7 @@ pub fn AppHeader() -> Element {
                             tag: TypographyTag::H1,
                             class: format!(
                                 "m-0 text-4xl font-bold tracking-[-0.04em] {} sm:text-5xl lg:text-6xl",
-                                theme.colors.text_primary
+                                theme.color(ThemeColor::Text)
                             ),
                             "{APP_TITLE}"
                         }
@@ -40,7 +41,7 @@ pub fn AppHeader() -> Element {
                 Col {
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-base {} sm:text-lg", theme.colors.text_secondary),
+                        class: format!("m-0 text-base {} sm:text-lg", theme.color(ThemeColor::TextMuted)),
                         "{APP_SUBTITLE}"
                     }
                 }

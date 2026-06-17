@@ -1,3 +1,4 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::gui::components::Theme;
@@ -18,7 +19,7 @@ pub fn ProgressBar(props: ProgressBarProps) -> Element {
     let percentage = props.percentage.min(100);
     let theme = use_context::<Theme>();
     let bar_class = if props.bar_class.is_empty() {
-        theme.colors.progress_fill.to_string()
+        theme.color(ThemeColor::Progress).to_string()
     } else {
         props.bar_class.clone()
     };
@@ -27,7 +28,7 @@ pub fn ProgressBar(props: ProgressBarProps) -> Element {
         div {
             class: format!(
                 "w-full overflow-hidden {} {} {}",
-                theme.colors.track_bg,
+                theme.color(ThemeColor::Track),
                 props.rounded,
                 props.class
             ),

@@ -1,3 +1,4 @@
+use crate::gui::components::{ThemeColor, ThemeRadius, ThemeShadow};
 use dioxus::prelude::*;
 
 use super::{theme::Theme, Flexbox};
@@ -19,17 +20,17 @@ pub struct CardProps {
 pub fn Card(props: CardProps) -> Element {
     let theme = use_context::<Theme>();
     let color = if props.color.is_empty() {
-        theme.colors.surface_base
+        theme.color(ThemeColor::Surface)
     } else {
         props.color.as_str()
     };
     let shadow = if props.shadow.is_empty() {
-        theme.shadow.card
+        theme.shadow(ThemeShadow::Card)
     } else {
         props.shadow.as_str()
     };
     let rounded = if props.rounded.is_empty() {
-        theme.shape.card_radius
+        theme.radius(ThemeRadius::Card)
     } else {
         props.rounded.as_str()
     };
@@ -39,7 +40,7 @@ pub fn Card(props: CardProps) -> Element {
             direction: "flex-col".to_string(),
             class: format!(
                 "relative overflow-hidden border backdrop-blur-xl {} {} {} {} {}",
-                theme.colors.border_subtle, color, shadow, rounded, props.class
+                theme.color(ThemeColor::Border), color, shadow, rounded, props.class
             ),
             {props.children}
         }

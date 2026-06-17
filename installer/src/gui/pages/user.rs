@@ -1,8 +1,9 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::gui::components::{
-    ButtonVariant, Card, CardBody, CardHeader, Col, Row, TextInput, Typography, TypographyTag,
-    Theme, UiButton,
+    ButtonVariant, Card, CardBody, CardHeader, Col, Row, TextInput, Theme, Typography,
+    TypographyTag, UiButton,
 };
 use crate::gui::routes::{next_route, previous_route, Route};
 use crate::gui::state::{InstallerConfig, InstallerContext, InstallerUiState, UserDraft};
@@ -30,19 +31,19 @@ pub fn UserPage() -> Element {
                 description: "Create the normal user for the installed system. This scaffold keeps password data in memory only.".to_string(),
             }
             Card {
-                color: theme.colors.surface_muted.to_string(),
+                color: theme.color(ThemeColor::Surface).to_string(),
                 CardHeader {
                     Typography {
                         tag: TypographyTag::P,
                         class: format!(
                             "m-0 text-xs font-bold uppercase tracking-[0.16em] {}",
-                            theme.colors.text_muted
+                            theme.color(ThemeColor::TextMuted)
                         ),
                         "Account setup"
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-base leading-7 {}", theme.colors.text_secondary),
+                        class: format!("m-0 text-base leading-7 {}", theme.color(ThemeColor::TextMuted)),
                         "Keep the system identity and login credentials compact and easy to scan."
                     }
                 }

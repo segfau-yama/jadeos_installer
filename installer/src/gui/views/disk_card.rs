@@ -1,3 +1,4 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::api::disk::DiskDeviceInfo;
@@ -27,9 +28,9 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
         Card {
             key: "{disk_path}",
             color: if is_selected {
-                theme.colors.surface_accent.to_string()
+                theme.color(ThemeColor::SurfaceAccent).to_string()
             } else {
-                theme.colors.surface_base.to_string()
+                theme.color(ThemeColor::Surface).to_string()
             },
             shadow: "shadow-none".to_string(),
             rounded: "rounded-[1.75rem]".to_string(),
@@ -45,12 +46,12 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
                         gap: "gap-1".to_string(),
                         Typography {
                             tag: TypographyTag::H3,
-                            class: format!("m-0 text-xl font-semibold {}", theme.colors.text_primary),
+                            class: format!("m-0 text-xl font-semibold {}", theme.color(ThemeColor::Text)),
                             "{disk_path}"
                         }
                         Typography {
                             tag: TypographyTag::P,
-                            class: format!("m-0 text-sm {}", theme.colors.text_muted),
+                            class: format!("m-0 text-sm {}", theme.color(ThemeColor::TextMuted)),
                             "{disk.model}"
                         }
                     }

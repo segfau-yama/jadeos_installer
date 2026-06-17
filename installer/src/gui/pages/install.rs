@@ -1,9 +1,10 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::api::install::InstallPhase;
 use crate::gui::components::{
-    BadgeTone, ButtonVariant, Flexbox, ProgressBar, StatusBadge, Typography, TypographyTag,
-    Theme, UiButton,
+    BadgeTone, ButtonVariant, Flexbox, ProgressBar, StatusBadge, Theme, Typography, TypographyTag,
+    UiButton,
 };
 use crate::gui::routes::{previous_route, Route};
 use crate::gui::state::InstallerContext;
@@ -40,13 +41,13 @@ pub fn InstallPage() -> Element {
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-sm font-medium {}", theme.colors.text_secondary),
+                        class: format!("m-0 text-sm font-medium {}", theme.color(ThemeColor::TextMuted)),
                         "Current phase"
                     }
                 }
                 Typography {
                     tag: TypographyTag::P,
-                    class: format!("mt-3 text-base font-semibold {}", theme.colors.text_primary),
+                    class: format!("mt-3 text-base font-semibold {}", theme.color(ThemeColor::Text)),
                     {
                         runtime_snapshot
                             .current_command
@@ -80,21 +81,21 @@ pub fn InstallPage() -> Element {
             }
             Typography {
                 tag: TypographyTag::H3,
-                class: format!("m-0 text-lg font-semibold {}", theme.colors.text_primary),
+                class: format!("m-0 text-lg font-semibold {}", theme.color(ThemeColor::Text)),
                 "Install log"
             }
             if runtime_snapshot.install_log.is_empty() {
                 Typography {
                     tag: TypographyTag::P,
-                    class: format!("m-0 text-base {}", theme.colors.text_secondary),
+                    class: format!("m-0 text-base {}", theme.color(ThemeColor::TextMuted)),
                     "No log entries yet."
                 }
             } else {
                 pre {
                     class: format!(
                         "m-0 overflow-x-auto rounded-[1.5rem] {} px-5 py-4 text-sm leading-6 {}",
-                        theme.colors.surface_inverse,
-                        theme.colors.text_inverse_surface
+                        theme.color(ThemeColor::SurfaceInverse),
+                        theme.color(ThemeColor::TextInverse)
                     ),
                     "{runtime_snapshot.install_log.join(\"\\n\")}"
                 }

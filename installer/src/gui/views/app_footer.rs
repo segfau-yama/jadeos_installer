@@ -1,3 +1,4 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::gui::components::{Col, Row, Theme, Typography, TypographyTag};
@@ -13,7 +14,7 @@ pub fn AppFooter() -> Element {
                 gap: "gap-2".to_string(),
                 class: format!(
                     "border-t {} pt-4 {}",
-                    theme.colors.border_subtle, theme.colors.text_muted
+                    theme.color(ThemeColor::Border), theme.color(ThemeColor::TextMuted)
                 ),
                 Col {
                     Typography {

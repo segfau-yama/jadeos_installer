@@ -1,3 +1,4 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::gui::components::{Col, Row, Theme, Typography, TypographyTag};
@@ -24,7 +25,7 @@ pub fn PageIntro(props: PageIntroProps) -> Element {
                     tag: TypographyTag::H2,
                     class: format!(
                         "m-0 text-3xl font-semibold tracking-[-0.03em] {} sm:text-4xl",
-                        theme.colors.text_primary
+                        theme.color(ThemeColor::Text)
                     ),
                     "{props.title}"
                 }
@@ -34,7 +35,7 @@ pub fn PageIntro(props: PageIntroProps) -> Element {
                     tag: TypographyTag::P,
                     class: format!(
                         "m-0 text-base leading-7 {} sm:text-lg",
-                        theme.colors.text_secondary
+                        theme.color(ThemeColor::TextMuted)
                     ),
                     "{props.description}"
                 }

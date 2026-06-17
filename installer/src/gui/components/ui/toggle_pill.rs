@@ -1,3 +1,4 @@
+use crate::gui::components::{ThemeColor, ThemeRadius};
 use dioxus::prelude::*;
 
 use crate::gui::components::Theme;
@@ -14,12 +15,16 @@ pub fn TogglePill(
     let selected_class = if selected {
         format!(
             "{} {} {}",
-            theme.colors.border_accent, theme.colors.accent_surface, theme.colors.accent_fg
+            theme.color(ThemeColor::BorderAccent),
+            theme.color(ThemeColor::SurfaceAccent),
+            theme.color(ThemeColor::TextAccent)
         )
     } else {
         format!(
             "{} {} {}",
-            theme.colors.border_subtle, theme.colors.surface_muted, theme.colors.accent_fg
+            theme.color(ThemeColor::Border),
+            theme.color(ThemeColor::Surface),
+            theme.color(ThemeColor::TextAccent)
         )
     };
     let disabled_class = if disabled {
@@ -27,13 +32,14 @@ pub fn TogglePill(
     } else {
         format!(
             "cursor-pointer {} {}",
-            theme.colors.border_accent_hover, theme.colors.surface_neutral_hover
+            theme.color(ThemeColor::BorderHover),
+            theme.color(ThemeColor::SurfaceHover)
         )
     };
     let dot_class = if selected {
-        theme.colors.accent_bg
+        theme.color(ThemeColor::Accent)
     } else {
-        theme.colors.accent_fill_soft
+        theme.color(ThemeColor::AccentSoft)
     };
 
     rsx! {
@@ -42,8 +48,8 @@ pub fn TogglePill(
             disabled,
             class: format!(
                 "inline-flex items-center gap-3 {} border px-4 py-2 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 {} focus-visible:ring-offset-2 {} {} {}",
-                theme.shape.pill_radius,
-                theme.colors.focus_visible_ring,
+                theme.radius(ThemeRadius::Pill),
+                theme.color(ThemeColor::FocusVisible),
                 selected_class,
                 disabled_class,
                 class

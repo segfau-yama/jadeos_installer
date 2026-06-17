@@ -1,3 +1,4 @@
+use crate::gui::components::{ThemeColor, ThemeRadius};
 use dioxus::prelude::*;
 
 use crate::gui::components::Theme;
@@ -20,15 +21,21 @@ pub fn StatusBadge(
     let tone_class = match tone {
         BadgeTone::Muted => format!(
             "{} {} {}",
-            theme.colors.border_subtle, theme.colors.surface_muted, theme.colors.accent_fg
+            theme.color(ThemeColor::Border),
+            theme.color(ThemeColor::Surface),
+            theme.color(ThemeColor::TextAccent)
         ),
         BadgeTone::Accent | BadgeTone::Success => format!(
             "{} {} {}",
-            theme.colors.border_accent, theme.colors.accent_surface, theme.colors.accent_fg
+            theme.color(ThemeColor::BorderAccent),
+            theme.color(ThemeColor::SurfaceAccent),
+            theme.color(ThemeColor::TextAccent)
         ),
         BadgeTone::Warning => format!(
             "{} {} {}",
-            theme.colors.warning_border, theme.colors.warning_bg, theme.colors.warning_fg
+            theme.color(ThemeColor::WarningBorder),
+            theme.color(ThemeColor::WarningBg),
+            theme.color(ThemeColor::WarningText)
         ),
     };
 
@@ -36,7 +43,7 @@ pub fn StatusBadge(
         span {
             class: format!(
                 "inline-flex items-center gap-2 {} border px-3 py-1.5 text-sm font-semibold {} {}",
-                theme.shape.pill_radius,
+                theme.radius(ThemeRadius::Pill),
                 tone_class,
                 class
             ),

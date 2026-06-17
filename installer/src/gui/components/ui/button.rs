@@ -1,3 +1,4 @@
+use crate::gui::components::{ThemeColor, ThemeRadius, ThemeShadow};
 use dioxus::prelude::*;
 
 use crate::gui::components::Theme;
@@ -21,30 +22,30 @@ pub fn UiButton(
     let variant_class = match variant {
         ButtonVariant::Primary => format!(
             "border border-transparent {} {} {} {} disabled:{} disabled:{} disabled:{} disabled:{}",
-            theme.colors.accent_bg,
-            theme.colors.text_inverse,
-            theme.shadow.interactive,
-            theme.colors.accent_bg_hover,
-            theme.colors.border_neutral,
-            theme.colors.surface_disabled,
-            theme.colors.text_disabled,
-            theme.shadow.none
+            theme.color(ThemeColor::Accent),
+            theme.color(ThemeColor::TextInverse),
+            theme.shadow(ThemeShadow::Interactive),
+            theme.color(ThemeColor::AccentHover),
+            theme.color(ThemeColor::Border),
+            theme.color(ThemeColor::SurfaceDisabled),
+            theme.color(ThemeColor::TextDisabled),
+            theme.shadow(ThemeShadow::None)
         ),
         ButtonVariant::Secondary => format!(
             "border {} {} {} {} disabled:{} disabled:{} disabled:{}",
-            theme.colors.border_subtle,
-            theme.colors.surface_accent,
-            theme.colors.accent_fg,
-            theme.colors.accent_surface_hover,
-            theme.colors.border_neutral,
-            theme.colors.surface_disabled,
-            theme.colors.text_disabled
+            theme.color(ThemeColor::Border),
+            theme.color(ThemeColor::SurfaceAccent),
+            theme.color(ThemeColor::TextAccent),
+            theme.color(ThemeColor::SurfaceHover),
+            theme.color(ThemeColor::Border),
+            theme.color(ThemeColor::SurfaceDisabled),
+            theme.color(ThemeColor::TextDisabled)
         ),
         ButtonVariant::Ghost => format!(
             "border border-transparent bg-transparent {} {} disabled:bg-transparent disabled:{}",
-            theme.colors.accent_fg,
-            theme.colors.surface_neutral_hover,
-            theme.colors.text_disabled
+            theme.color(ThemeColor::TextAccent),
+            theme.color(ThemeColor::SurfaceHover),
+            theme.color(ThemeColor::TextDisabled)
         ),
     };
 
@@ -54,8 +55,8 @@ pub fn UiButton(
             disabled,
             class: format!(
                 "inline-flex min-h-11 items-center justify-center {} px-5 text-sm font-semibold tracking-[0.01em] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 {} focus-visible:ring-offset-2 disabled:cursor-not-allowed {} {}",
-                theme.shape.pill_radius,
-                theme.colors.focus_visible_ring,
+                theme.radius(ThemeRadius::Pill),
+                theme.color(ThemeColor::FocusVisible),
                 variant_class,
                 class
             ),

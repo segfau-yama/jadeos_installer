@@ -1,9 +1,10 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::api::install::{generate_install_plan, preview_install_plan, run_install_plan};
 use crate::gui::components::{
-    BadgeTone, ButtonVariant, Card, CardBody, Col, Flexbox, Row, StatusBadge, TogglePill,
-    Theme, Typography, TypographyTag, UiButton,
+    BadgeTone, ButtonVariant, Card, CardBody, Col, Flexbox, Row, StatusBadge, Theme, TogglePill,
+    Typography, TypographyTag, UiButton,
 };
 use crate::gui::routes::{next_route, previous_route, Route};
 use crate::gui::state::{
@@ -79,8 +80,8 @@ pub fn SummaryPage() -> Element {
                 }
             }
             Card {
-                color: theme.colors.warning_bg.to_string(),
-                class: theme.colors.warning_border.to_string(),
+                color: theme.color(ThemeColor::WarningBg).to_string(),
+                class: theme.color(ThemeColor::WarningBorder).to_string(),
                 shadow: "shadow-none".to_string(),
                 rounded: "rounded-[1.75rem]".to_string(),
                 CardBody {
@@ -95,7 +96,7 @@ pub fn SummaryPage() -> Element {
                         }
                         Typography {
                             tag: TypographyTag::P,
-                            class: format!("m-0 text-sm font-medium {}", theme.colors.warning_fg),
+                            class: format!("m-0 text-sm font-medium {}", theme.color(ThemeColor::WarningText)),
                             "{ERASE_CONFIRMATION_COPY}"
                         }
                     }

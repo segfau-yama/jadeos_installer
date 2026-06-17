@@ -1,3 +1,4 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::api::disk::list_disks;
@@ -66,7 +67,7 @@ pub fn DiskPage() -> Element {
             if !config_snapshot.target_disk.is_empty() {
                 Typography {
                     tag: TypographyTag::P,
-                    class: format!("m-0 text-sm font-semibold {}", theme.colors.text_accent),
+                    class: format!("m-0 text-sm font-semibold {}", theme.color(ThemeColor::TextAccent)),
                     "Current selection: {config_snapshot.target_disk}"
                 }
             }

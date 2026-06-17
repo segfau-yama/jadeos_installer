@@ -1,3 +1,4 @@
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::gui::components::{Card, CardBody, Col, Container, Row, Theme, ThemeProvider};
@@ -32,7 +33,7 @@ pub fn app() -> Element {
         ThemeProvider {
             theme: theme,
             div {
-                class: format!("min-h-screen px-4 py-8 sm:px-6 lg:px-8 {}", theme.colors.page_background),
+                class: format!("min-h-screen px-4 py-8 sm:px-6 lg:px-8 {}", theme.color(ThemeColor::Page)),
                 Container {
                     Row {
                         cols: "grid-cols-1".to_string(),
