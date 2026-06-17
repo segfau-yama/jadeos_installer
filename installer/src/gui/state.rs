@@ -1,3 +1,4 @@
+use dioxus::prelude::Signal;
 use serde::{Deserialize, Serialize};
 
 use crate::api::disk::DiskDeviceInfo;
@@ -73,4 +74,12 @@ impl Default for InstallRuntime {
             install_log: Vec::new(),
         }
     }
+}
+
+#[derive(Clone, Copy)]
+pub struct InstallerContext {
+    pub config: Signal<InstallerConfig>,
+    pub user: Signal<UserDraft>,
+    pub ui: Signal<InstallerUiState>,
+    pub runtime: Signal<InstallRuntime>,
 }

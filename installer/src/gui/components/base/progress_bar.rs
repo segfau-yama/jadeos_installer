@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::gui::components::Theme;
+
 #[derive(PartialEq, Clone, Props)]
 pub struct ProgressBarProps {
     percentage: u8,
@@ -7,19 +9,33 @@ pub struct ProgressBarProps {
     rounded: String,
     #[props(default = String::new())]
     class: String,
-    #[props(default = "from-emerald-600 to-teal-500".to_string())]
+    #[props(default = String::new())]
     bar_class: String,
 }
 
 #[component]
 pub fn ProgressBar(props: ProgressBarProps) -> Element {
     let percentage = props.percentage.min(100);
+    let theme = use_context::<Theme>();
+    let bar_class = if props.bar_class.is_empty() {
+        theme.colors.progress_fill.to_string()
+    } else {
+        props.bar_class.clone()
+    };
 
     rsx! {
         div {
-            class: "w-full overflow-hidden bg-emerald-950/10 {props.rounded} {props.class}",
+            class: format!(
+                "w-full overflow-hidden {} {} {}",
+                theme.colors.track_bg,
+                props.rounded,
+                props.class
+            ),
             div {
-                class: "h-full rounded-full bg-gradient-to-r transition-[width] duration-300 {props.bar_class}",
+                class: format!(
+                    "h-full rounded-full bg-gradient-to-r transition-[width] duration-300 {}",
+                    bar_class
+                ),
                 style: "width: {percentage}%;",
             }
         }

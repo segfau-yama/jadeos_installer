@@ -1,15 +1,17 @@
 use dioxus::prelude::*;
 
 use crate::api::disk::list_disks;
-use crate::gui::components::{ButtonVariant, Flexbox, Typography, TypographyTag, UiButton};
+use crate::gui::components::{ButtonVariant, Flexbox, Theme, Typography, TypographyTag, UiButton};
 use crate::gui::routes::{next_route, previous_route, Route};
-use crate::gui::state::{InstallerConfig, InstallerUiState};
+use crate::gui::state::{InstallerConfig, InstallerContext, InstallerUiState};
 use crate::gui::views::{ActionRow, DiskCard, NoticePanel, PageIntro, PageSection, ValidationList};
 
 #[component]
 pub fn DiskPage() -> Element {
-    let mut config = use_context::<Signal<InstallerConfig>>();
-    let mut ui = use_context::<Signal<InstallerUiState>>();
+    let installer = use_context::<InstallerContext>();
+    let theme = use_context::<Theme>();
+    let mut config = installer.config;
+    let mut ui = installer.ui;
     let config_snapshot = config();
     let ui_snapshot = ui();
     let validation_errors = disk_validation_errors(&config_snapshot);
@@ -64,7 +66,7 @@ pub fn DiskPage() -> Element {
             if !config_snapshot.target_disk.is_empty() {
                 Typography {
                     tag: TypographyTag::P,
-                    class: "m-0 text-sm font-semibold text-emerald-700".to_string(),
+                    class: format!("m-0 text-sm font-semibold {}", theme.colors.text_accent),
                     "Current selection: {config_snapshot.target_disk}"
                 }
             }

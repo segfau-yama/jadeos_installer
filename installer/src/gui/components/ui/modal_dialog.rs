@@ -1,22 +1,29 @@
 use dioxus::prelude::*;
 
-use crate::gui::components::{Flexbox, Row};
+use crate::gui::components::{Flexbox, Row, Theme};
 
 #[component]
 pub fn ModalDialog(is_visible: bool, children: Element) -> Element {
     if !is_visible {
         return rsx! { Fragment {} };
     }
+    let theme = use_context::<Theme>();
 
     rsx! {
         Flexbox {
             items: "items-center".to_string(),
             justify: "justify-center".to_string(),
-            class: "fixed inset-0 z-50 bg-emerald-950/40 px-4 py-8 backdrop-blur-sm".to_string(),
+            class: format!("fixed inset-0 z-50 {} px-4 py-8 backdrop-blur-sm", theme.colors.overlay_bg),
             Row {
                 cols: "grid-cols-1".to_string(),
                 gap: "gap-4".to_string(),
-                class: "rounded-[2rem] border border-white/50 bg-white/95 p-6 shadow-[0_30px_90px_rgba(15,23,42,0.22)]".to_string(),
+                class: format!(
+                    "{} border {} {} p-6 {}",
+                    theme.shape.dialog_radius,
+                    theme.colors.border_subtle,
+                    theme.colors.surface_elevated,
+                    theme.shadow.overlay
+                ),
                 {children}
             }
         }

@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::gui::components::{Typography, TypographyTag};
+use crate::gui::components::{Theme, Typography, TypographyTag};
 
 #[derive(PartialEq, Clone, Props)]
 pub struct InfoTileProps {
@@ -12,17 +12,22 @@ pub struct InfoTileProps {
 
 #[component]
 pub fn InfoTile(props: InfoTileProps) -> Element {
+    let theme = use_context::<Theme>();
+
     rsx! {
         div {
-            class: "rounded-[1.5rem] border border-emerald-900/10 bg-emerald-50/75 px-5 py-4 {props.class}",
+            class: format!(
+                "rounded-[1.5rem] border {} {} px-5 py-4 {}",
+                theme.colors.border_subtle, theme.colors.surface_accent, props.class
+            ),
             Typography {
                 tag: TypographyTag::P,
-                class: "m-0 text-xs font-bold uppercase tracking-[0.12em] text-emerald-900/65".to_string(),
+                class: format!("m-0 text-xs font-bold uppercase tracking-[0.12em] {}", theme.colors.text_muted),
                 "{props.label}"
             }
             Typography {
                 tag: TypographyTag::P,
-                class: "mt-2 text-base font-semibold text-jade-950".to_string(),
+                class: format!("mt-2 text-base font-semibold {}", theme.colors.text_primary),
                 "{props.value}"
             }
         }

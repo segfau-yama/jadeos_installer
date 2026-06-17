@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::gui::components::Flexbox;
+use crate::gui::components::{Flexbox, Theme};
 
 #[derive(Clone, PartialEq, Props)]
 pub struct TextInputProps {
@@ -30,6 +30,7 @@ pub fn TextInput(props: TextInputProps) -> Element {
     } = props;
     let input_type = input_type.as_deref().unwrap_or("text");
     let autocomplete = autocomplete.as_deref().unwrap_or("off");
+    let theme = use_context::<Theme>();
 
     rsx! {
         Flexbox {
@@ -37,19 +38,27 @@ pub fn TextInput(props: TextInputProps) -> Element {
             gap: "gap-2".to_string(),
             class: class,
             label {
-                class: "text-xs font-bold uppercase tracking-[0.12em] text-emerald-900/65",
+                class: format!("text-xs font-bold uppercase tracking-[0.12em] {}", theme.colors.text_muted),
                 "{label}"
             }
             input {
                 r#type: "{input_type}",
                 value: value.clone(),
                 autocomplete: "{autocomplete}",
-                class: "block rounded-[1.35rem] border border-emerald-900/12 bg-white px-4 py-4 text-[0.98rem] text-emerald-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_10px_24px_rgba(12,34,27,0.04)] outline-none transition focus:border-emerald-400/60 focus:ring-4 focus:ring-emerald-100",
+                class: format!(
+                    "block {} border {} {} px-4 py-4 text-[0.98rem] {} shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_10px_24px_rgba(12,34,27,0.04)] outline-none transition {} focus:ring-4 {}",
+                    theme.shape.control_radius,
+                    theme.colors.border_subtle,
+                    theme.colors.surface_base,
+                    theme.colors.text_primary,
+                    theme.colors.focus_border,
+                    theme.colors.focus_ring
+                ),
                 oninput: move |event| onchange.call(event),
             }
             if let Some(supporting_text) = supporting_text.clone() {
                 p {
-                    class: "m-0 text-sm leading-6 text-emerald-900/65",
+                    class: format!("m-0 text-sm leading-6 {}", theme.colors.text_muted),
                     "{supporting_text}"
                 }
             }

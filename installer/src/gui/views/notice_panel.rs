@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::gui::components::{Flexbox, Typography, TypographyTag};
+use crate::gui::components::{Flexbox, Theme, Typography, TypographyTag};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum PanelTone {
@@ -21,27 +21,36 @@ pub struct NoticePanelProps {
 
 #[component]
 pub fn NoticePanel(props: NoticePanelProps) -> Element {
+    let theme = use_context::<Theme>();
     let (panel_class, title_class) = match props.tone {
         PanelTone::Muted => (
-            "border-emerald-900/10 bg-emerald-50/70 text-emerald-900/70",
-            "text-emerald-900",
+            format!(
+                "{} {} {}",
+                theme.colors.border_subtle,
+                theme.colors.surface_accent,
+                theme.colors.text_secondary
+            ),
+            theme.colors.accent_fg,
         ),
         PanelTone::Warning => (
-            "border-amber-200 bg-amber-50/80 text-amber-800",
-            "text-amber-800",
+            format!(
+                "{} {} {}",
+                theme.colors.warning_border, theme.colors.warning_bg, theme.colors.warning_fg
+            ),
+            theme.colors.warning_fg,
         ),
     };
 
     rsx! {
         div {
-            class: "rounded-[1.75rem] border px-5 py-4 {panel_class} {props.class}",
+            class: format!("rounded-[1.75rem] border px-5 py-4 {} {}", panel_class, props.class),
             Flexbox {
                 direction: "flex-col".to_string(),
                 gap: "gap-3".to_string(),
                 if let Some(title) = props.title {
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-sm font-semibold {title_class}"),
+                        class: format!("m-0 text-sm font-semibold {}", title_class),
                         "{title}"
                     }
                 }

@@ -3,6 +3,7 @@ mod container;
 mod flexbox;
 mod grid;
 mod progress_bar;
+mod theme;
 mod typography;
 
 pub use card::{Card, CardBody, CardFooter, CardHeader};
@@ -10,4 +11,5 @@ pub use container::Container;
 pub use flexbox::Flexbox;
 pub use grid::{Col, Row};
 pub use progress_bar::ProgressBar;
+pub use theme::{Theme, ThemeColors, ThemeMode, ThemeProvider, ThemeShadow, ThemeShape};
 pub use typography::{Typography, TypographyTag};

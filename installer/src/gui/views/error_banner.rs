@@ -1,11 +1,13 @@
 use dioxus::prelude::*;
 
 use crate::gui::components::{
-    ButtonVariant, Flexbox, ModalDialog, Typography, TypographyTag, UiButton,
+    ButtonVariant, Flexbox, ModalDialog, Theme, Typography, TypographyTag, UiButton,
 };
 
 #[component]
 pub fn ErrorBanner(message: Option<String>, on_dismiss: EventHandler<()>) -> Element {
+    let theme = use_context::<Theme>();
+
     match message {
         Some(message) => rsx! {
             ModalDialog {
@@ -15,17 +17,23 @@ pub fn ErrorBanner(message: Option<String>, on_dismiss: EventHandler<()>) -> Ele
                     gap: "gap-4".to_string(),
                     Typography {
                         tag: TypographyTag::P,
-                        class: "m-0 text-xs font-bold uppercase tracking-[0.16em] text-amber-700".to_string(),
+                        class: format!(
+                            "m-0 text-xs font-bold uppercase tracking-[0.16em] {}",
+                            theme.colors.warning_fg
+                        ),
                         "Installer notice"
                     }
                     Typography {
                         tag: TypographyTag::H2,
-                        class: "m-0 text-2xl font-semibold tracking-[-0.03em] text-jade-950".to_string(),
+                        class: format!(
+                            "m-0 text-2xl font-semibold tracking-[-0.03em] {}",
+                            theme.colors.text_primary
+                        ),
                         "Something needs attention"
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: "m-0 text-base leading-7 text-emerald-900/72".to_string(),
+                        class: format!("m-0 text-base leading-7 {}", theme.colors.text_secondary),
                         "{message}"
                     }
                     Flexbox {

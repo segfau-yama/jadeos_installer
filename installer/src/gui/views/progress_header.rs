@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::gui::components::{Flexbox, Typography, TypographyTag};
+use crate::gui::components::{Flexbox, Theme, Typography, TypographyTag};
 use crate::gui::routes::{ordered_routes, route_index, Route};
 
 #[derive(PartialEq, Clone, Props)]
@@ -21,34 +21,66 @@ fn ProgressStep(props: ProgressStepProps) -> Element {
         is_selected,
         is_reached,
     } = props;
+    let theme = use_context::<Theme>();
     let navigator = use_navigator();
     let step_class = if is_selected {
-        "border-emerald-600/40 bg-emerald-100 text-emerald-800 shadow"
+        format!(
+            "{} {} {} {}",
+            theme.colors.border_accent,
+            theme.colors.accent_surface,
+            theme.colors.accent_fg,
+            theme.shadow.interactive
+        )
     } else if is_reached {
-        "border-emerald-900/10 bg-white text-emerald-900 hover:border-emerald-400/40 hover:bg-emerald-50"
+        format!(
+            "{} {} {} {}",
+            theme.colors.border_subtle,
+            theme.colors.surface_base,
+            theme.colors.accent_fg,
+            [
+                theme.colors.border_accent_hover,
+                theme.colors.surface_neutral_hover,
+            ]
+            .join(" ")
+        )
     } else {
-        "border-slate-200 bg-slate-50/80 text-slate-400"
+        format!(
+            "{} {} {}",
+            theme.colors.border_neutral, theme.colors.surface_neutral, theme.colors.text_disabled
+        )
     };
     let circle_class = if is_selected {
-        "bg-emerald-700 text-white"
+        format!("{} {}", theme.colors.accent_bg, theme.colors.text_inverse)
     } else if is_reached {
-        "bg-emerald-100 text-emerald-800"
+        format!("{} {}", theme.colors.accent_surface, theme.colors.accent_fg)
     } else {
-        "bg-slate-200 text-slate-500"
+        format!(
+            "{} {}",
+            theme.colors.surface_disabled, theme.colors.text_disabled
+        )
     };
 
     rsx! {
         button {
             r#type: "button",
             disabled: !is_reached,
-            class: "inline-flex items-center gap-3 rounded-full border px-4 py-3 text-left text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 disabled:cursor-not-allowed {step_class}",
+            class: format!(
+                "inline-flex items-center gap-3 {} border px-4 py-3 text-left text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 {} focus-visible:ring-offset-2 disabled:cursor-not-allowed {}",
+                theme.shape.pill_radius,
+                theme.colors.focus_visible_ring,
+                step_class
+            ),
             onclick: move |_| {
                 if is_reached && !is_selected {
                     navigator.push(route.clone());
                 }
             },
             span {
-                class: "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold {circle_class}",
+                class: format!(
+                    "inline-flex h-7 w-7 items-center justify-center {} text-xs font-bold {}",
+                    theme.shape.pill_radius,
+                    circle_class
+                ),
                 "{index + 1}"
             }
             span { "{label}" }
@@ -59,6 +91,7 @@ fn ProgressStep(props: ProgressStepProps) -> Element {
 #[component]
 pub fn ProgressHeader(active_route: Route) -> Element {
     let active_index = route_index(&active_route);
+    let theme = use_context::<Theme>();
 
     rsx! {
         Flexbox {
@@ -66,7 +99,10 @@ pub fn ProgressHeader(active_route: Route) -> Element {
             gap: "gap-3".to_string(),
             Typography {
                 tag: TypographyTag::P,
-                class: "m-0 text-xs font-bold uppercase tracking-[0.16em] text-emerald-900/65".to_string(),
+                class: format!(
+                    "m-0 text-xs font-bold uppercase tracking-[0.16em] {}",
+                    theme.colors.text_muted
+                ),
                 "Progress"
             }
             Flexbox {

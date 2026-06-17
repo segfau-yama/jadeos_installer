@@ -1,14 +1,14 @@
 use dioxus::prelude::*;
 
-use super::Flexbox;
+use super::{theme::Theme, Flexbox};
 
 #[derive(PartialEq, Clone, Props)]
 pub struct CardProps {
-    #[props(default = "bg-white/90".to_string())]
+    #[props(default = String::new())]
     color: String,
-    #[props(default = "shadow".to_string())]
+    #[props(default = String::new())]
     shadow: String,
-    #[props(default = "rounded-[2rem]".to_string())]
+    #[props(default = String::new())]
     rounded: String,
     #[props(default = String::new())]
     class: String,
@@ -17,12 +17,29 @@ pub struct CardProps {
 
 #[component]
 pub fn Card(props: CardProps) -> Element {
+    let theme = use_context::<Theme>();
+    let color = if props.color.is_empty() {
+        theme.colors.surface_base
+    } else {
+        props.color.as_str()
+    };
+    let shadow = if props.shadow.is_empty() {
+        theme.shadow.card
+    } else {
+        props.shadow.as_str()
+    };
+    let rounded = if props.rounded.is_empty() {
+        theme.shape.card_radius
+    } else {
+        props.rounded.as_str()
+    };
+
     rsx! {
         Flexbox {
             direction: "flex-col".to_string(),
             class: format!(
-                "relative overflow-hidden border border-emerald-950/10 backdrop-blur-xl {} {} {} {}",
-                props.color, props.shadow, props.rounded, props.class
+                "relative overflow-hidden border backdrop-blur-xl {} {} {} {} {}",
+                theme.colors.border_subtle, color, shadow, rounded, props.class
             ),
             {props.children}
         }

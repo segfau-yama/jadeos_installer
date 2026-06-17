@@ -1,15 +1,20 @@
 use dioxus::prelude::*;
 
-use crate::gui::components::{Col, Row, Typography, TypographyTag};
+use crate::gui::components::{Col, Row, Theme, Typography, TypographyTag};
 
 #[component]
 pub fn AppFooter() -> Element {
+    let theme = use_context::<Theme>();
+
     rsx! {
         footer {
             Row {
                 cols: "grid-cols-1 xl:grid-cols-2".to_string(),
                 gap: "gap-2".to_string(),
-                class: "border-t border-emerald-950/10 pt-4 text-emerald-900/65".to_string(),
+                class: format!(
+                    "border-t {} pt-4 {}",
+                    theme.colors.border_subtle, theme.colors.text_muted
+                ),
                 Col {
                     Typography {
                         tag: TypographyTag::P,

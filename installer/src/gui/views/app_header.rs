@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::gui::components::{Col, Flexbox, Row, Typography, TypographyTag};
+use crate::gui::components::{Col, Flexbox, Row, Theme, Typography, TypographyTag};
 
 const APP_TITLE: &str = "JadeOS Installer";
 const APP_SUBTITLE: &str =
@@ -8,6 +8,8 @@ const APP_SUBTITLE: &str =
 
 #[component]
 pub fn AppHeader() -> Element {
+    let theme = use_context::<Theme>();
+
     rsx! {
         header {
             Row {
@@ -19,12 +21,18 @@ pub fn AppHeader() -> Element {
                         gap: "gap-3".to_string(),
                         Typography {
                             tag: TypographyTag::P,
-                            class: "m-0 text-xs font-bold uppercase tracking-[0.18em] text-emerald-900/65".to_string(),
+                            class: format!(
+                                "m-0 text-xs font-bold uppercase tracking-[0.18em] {}",
+                                theme.colors.text_muted
+                            ),
                             "Safety-first installer"
                         }
                         Typography {
                             tag: TypographyTag::H1,
-                            class: "m-0 text-4xl font-bold tracking-[-0.04em] text-jade-950 sm:text-5xl lg:text-6xl".to_string(),
+                            class: format!(
+                                "m-0 text-4xl font-bold tracking-[-0.04em] {} sm:text-5xl lg:text-6xl",
+                                theme.colors.text_primary
+                            ),
                             "{APP_TITLE}"
                         }
                     }
@@ -32,7 +40,7 @@ pub fn AppHeader() -> Element {
                 Col {
                     Typography {
                         tag: TypographyTag::P,
-                        class: "m-0 text-base text-emerald-900/70 sm:text-lg".to_string(),
+                        class: format!("m-0 text-base {} sm:text-lg", theme.colors.text_secondary),
                         "{APP_SUBTITLE}"
                     }
                 }

@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use crate::api::disk::DiskDeviceInfo;
 use crate::gui::components::{
     BadgeTone, ButtonVariant, Card, CardBody, CardFooter, CardHeader, Col, Flexbox, Row,
-    StatusBadge, Typography, TypographyTag, UiButton,
+    StatusBadge, Theme, Typography, TypographyTag, UiButton,
 };
 
 use super::{
@@ -13,6 +13,7 @@ use super::{
 
 #[component]
 pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler<()>) -> Element {
+    let theme = use_context::<Theme>();
     let disk_path = disk.path.clone();
     let removable_label = if disk.removable { "yes" } else { "no" };
     let mounted_label = if disk.mounted { "yes" } else { "no" };
@@ -26,9 +27,9 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
         Card {
             key: "{disk_path}",
             color: if is_selected {
-                "bg-emerald-50/85".to_string()
+                theme.colors.surface_accent.to_string()
             } else {
-                "bg-white".to_string()
+                theme.colors.surface_base.to_string()
             },
             shadow: "shadow-none".to_string(),
             rounded: "rounded-[1.75rem]".to_string(),
@@ -44,12 +45,12 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
                         gap: "gap-1".to_string(),
                         Typography {
                             tag: TypographyTag::H3,
-                            class: "m-0 text-xl font-semibold text-jade-950".to_string(),
+                            class: format!("m-0 text-xl font-semibold {}", theme.colors.text_primary),
                             "{disk_path}"
                         }
                         Typography {
                             tag: TypographyTag::P,
-                            class: "m-0 text-sm text-emerald-900/65".to_string(),
+                            class: format!("m-0 text-sm {}", theme.colors.text_muted),
                             "{disk.model}"
                         }
                     }

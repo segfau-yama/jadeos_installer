@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::gui::components::Theme;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum BadgeTone {
     Muted,
@@ -14,16 +16,30 @@ pub fn StatusBadge(
     #[props(default = BadgeTone::Muted)] tone: BadgeTone,
     #[props(default = String::new())] class: String,
 ) -> Element {
+    let theme = use_context::<Theme>();
     let tone_class = match tone {
-        BadgeTone::Muted => "border-emerald-900/10 bg-white/80 text-emerald-900",
-        BadgeTone::Accent => "border-emerald-600/30 bg-emerald-100 text-emerald-800",
-        BadgeTone::Success => "border-emerald-600/25 bg-emerald-100 text-emerald-700",
-        BadgeTone::Warning => "border-amber-300 bg-amber-50 text-amber-800",
+        BadgeTone::Muted => format!(
+            "{} {} {}",
+            theme.colors.border_subtle, theme.colors.surface_muted, theme.colors.accent_fg
+        ),
+        BadgeTone::Accent | BadgeTone::Success => format!(
+            "{} {} {}",
+            theme.colors.border_accent, theme.colors.accent_surface, theme.colors.accent_fg
+        ),
+        BadgeTone::Warning => format!(
+            "{} {} {}",
+            theme.colors.warning_border, theme.colors.warning_bg, theme.colors.warning_fg
+        ),
     };
 
     rsx! {
         span {
-            class: "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold {tone_class} {class}",
+            class: format!(
+                "inline-flex items-center gap-2 {} border px-3 py-1.5 text-sm font-semibold {} {}",
+                theme.shape.pill_radius,
+                tone_class,
+                class
+            ),
             {children}
         }
     }

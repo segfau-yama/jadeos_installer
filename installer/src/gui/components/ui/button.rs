@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::gui::components::Theme;
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ButtonVariant {
     Primary,
@@ -15,23 +17,48 @@ pub fn UiButton(
     #[props(default = false)] disabled: bool,
     #[props(default = String::new())] class: String,
 ) -> Element {
+    let theme = use_context::<Theme>();
     let variant_class = match variant {
-        ButtonVariant::Primary => {
-            "border border-transparent bg-emerald-700 text-white shadow hover:bg-emerald-800 disabled:border-slate-200 disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
-        }
-        ButtonVariant::Secondary => {
-            "border border-emerald-900/10 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-500"
-        }
-        ButtonVariant::Ghost => {
-            "border border-transparent bg-transparent text-emerald-800 hover:bg-emerald-50 disabled:bg-transparent disabled:text-slate-400"
-        }
+        ButtonVariant::Primary => format!(
+            "border border-transparent {} {} {} {} disabled:{} disabled:{} disabled:{} disabled:{}",
+            theme.colors.accent_bg,
+            theme.colors.text_inverse,
+            theme.shadow.interactive,
+            theme.colors.accent_bg_hover,
+            theme.colors.border_neutral,
+            theme.colors.surface_disabled,
+            theme.colors.text_disabled,
+            theme.shadow.none
+        ),
+        ButtonVariant::Secondary => format!(
+            "border {} {} {} {} disabled:{} disabled:{} disabled:{}",
+            theme.colors.border_subtle,
+            theme.colors.surface_accent,
+            theme.colors.accent_fg,
+            theme.colors.accent_surface_hover,
+            theme.colors.border_neutral,
+            theme.colors.surface_disabled,
+            theme.colors.text_disabled
+        ),
+        ButtonVariant::Ghost => format!(
+            "border border-transparent bg-transparent {} {} disabled:bg-transparent disabled:{}",
+            theme.colors.accent_fg,
+            theme.colors.surface_neutral_hover,
+            theme.colors.text_disabled
+        ),
     };
 
     rsx! {
         button {
             r#type: "button",
             disabled,
-            class: "inline-flex min-h-11 items-center justify-center rounded-full px-5 text-sm font-semibold tracking-[0.01em] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 disabled:cursor-not-allowed {variant_class} {class}",
+            class: format!(
+                "inline-flex min-h-11 items-center justify-center {} px-5 text-sm font-semibold tracking-[0.01em] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 {} focus-visible:ring-offset-2 disabled:cursor-not-allowed {} {}",
+                theme.shape.pill_radius,
+                theme.colors.focus_visible_ring,
+                variant_class,
+                class
+            ),
             onclick: move |event| {
                 if !disabled {
                     onpress.call(event);

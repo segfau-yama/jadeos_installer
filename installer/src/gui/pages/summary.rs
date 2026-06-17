@@ -3,10 +3,12 @@ use dioxus::prelude::*;
 use crate::api::install::{generate_install_plan, preview_install_plan, run_install_plan};
 use crate::gui::components::{
     BadgeTone, ButtonVariant, Card, CardBody, Col, Flexbox, Row, StatusBadge, TogglePill,
-    Typography, TypographyTag, UiButton,
+    Theme, Typography, TypographyTag, UiButton,
 };
 use crate::gui::routes::{next_route, previous_route, Route};
-use crate::gui::state::{InstallRuntime, InstallerConfig, InstallerUiState, UserDraft};
+use crate::gui::state::{
+    InstallRuntime, InstallerConfig, InstallerContext, InstallerUiState, UserDraft,
+};
 use crate::gui::views::{ActionRow, InfoTile, PageIntro, PageSection, ValidationList};
 
 const SUMMARY_FIXED_SETTINGS: [(&str, &str); 7] = [
@@ -24,10 +26,12 @@ const ERASE_CONFIRMATION_COPY: &str =
 
 #[component]
 pub fn SummaryPage() -> Element {
-    let mut config = use_context::<Signal<InstallerConfig>>();
-    let user = use_context::<Signal<UserDraft>>();
-    let mut ui = use_context::<Signal<InstallerUiState>>();
-    let runtime = use_context::<Signal<InstallRuntime>>();
+    let installer = use_context::<InstallerContext>();
+    let theme = use_context::<Theme>();
+    let mut config = installer.config;
+    let user = installer.user;
+    let mut ui = installer.ui;
+    let runtime = installer.runtime;
     let config_snapshot = config();
     let user_snapshot = user();
     let plan_preview = preview_plan(&config_snapshot);
@@ -75,8 +79,8 @@ pub fn SummaryPage() -> Element {
                 }
             }
             Card {
-                color: "bg-amber-50/80".to_string(),
-                class: "border-amber-200".to_string(),
+                color: theme.colors.warning_bg.to_string(),
+                class: theme.colors.warning_border.to_string(),
                 shadow: "shadow-none".to_string(),
                 rounded: "rounded-[1.75rem]".to_string(),
                 CardBody {
@@ -91,7 +95,7 @@ pub fn SummaryPage() -> Element {
                         }
                         Typography {
                             tag: TypographyTag::P,
-                            class: "m-0 text-sm font-medium text-amber-800".to_string(),
+                            class: format!("m-0 text-sm font-medium {}", theme.colors.warning_fg),
                             "{ERASE_CONFIRMATION_COPY}"
                         }
                     }

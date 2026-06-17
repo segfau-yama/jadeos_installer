@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::gui::components::Theme;
+
 #[component]
 pub fn TogglePill(
     onpress: EventHandler<MouseEvent>,
@@ -8,27 +10,44 @@ pub fn TogglePill(
     #[props(default = false)] disabled: bool,
     #[props(default = String::new())] class: String,
 ) -> Element {
+    let theme = use_context::<Theme>();
     let selected_class = if selected {
-        "border-emerald-600/40 bg-emerald-100 text-emerald-800"
+        format!(
+            "{} {} {}",
+            theme.colors.border_accent, theme.colors.accent_surface, theme.colors.accent_fg
+        )
     } else {
-        "border-emerald-900/10 bg-white/80 text-emerald-900"
+        format!(
+            "{} {} {}",
+            theme.colors.border_subtle, theme.colors.surface_muted, theme.colors.accent_fg
+        )
     };
     let disabled_class = if disabled {
-        "cursor-not-allowed opacity-60"
+        "cursor-not-allowed opacity-60".to_string()
     } else {
-        "cursor-pointer hover:border-emerald-400/40 hover:bg-emerald-50"
+        format!(
+            "cursor-pointer {} {}",
+            theme.colors.border_accent_hover, theme.colors.surface_neutral_hover
+        )
     };
     let dot_class = if selected {
-        "bg-emerald-700"
+        theme.colors.accent_bg
     } else {
-        "bg-emerald-300"
+        theme.colors.accent_fill_soft
     };
 
     rsx! {
         button {
             r#type: "button",
             disabled,
-            class: "inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 {selected_class} {disabled_class} {class}",
+            class: format!(
+                "inline-flex items-center gap-3 {} border px-4 py-2 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 {} focus-visible:ring-offset-2 {} {} {}",
+                theme.shape.pill_radius,
+                theme.colors.focus_visible_ring,
+                selected_class,
+                disabled_class,
+                class
+            ),
             onclick: move |event| {
                 if !disabled {
                     onpress.call(event);
@@ -36,7 +55,7 @@ pub fn TogglePill(
             },
             span {
                 aria_hidden: "true",
-                class: "inline-flex h-2.5 w-2.5 rounded-full {dot_class}",
+                class: format!("inline-flex h-2.5 w-2.5 rounded-full {}", dot_class),
             }
             {children}
         }

@@ -1,15 +1,20 @@
 use dioxus::prelude::*;
 
-use crate::gui::components::{Flexbox, Typography, TypographyTag};
+use crate::gui::components::{Flexbox, Theme, Typography, TypographyTag};
 
 #[component]
 fn ValidationMessage(message: String) -> Element {
+    let theme = use_context::<Theme>();
+
     rsx! {
         div {
-            class: "rounded-3xl border border-rose-200 bg-rose-50/90 px-4 py-3",
+            class: format!(
+                "rounded-3xl border {} {} px-4 py-3",
+                theme.colors.border_danger, theme.colors.danger_bg
+            ),
             Typography {
                 tag: TypographyTag::P,
-                class: "m-0 text-sm font-medium text-rose-700".to_string(),
+                class: format!("m-0 text-sm font-medium {}", theme.colors.danger_fg),
                 "{message}"
             }
         }

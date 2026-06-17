@@ -2,17 +2,19 @@ use dioxus::prelude::*;
 
 use crate::gui::components::{
     ButtonVariant, Card, CardBody, CardHeader, Col, Row, TextInput, Typography, TypographyTag,
-    UiButton,
+    Theme, UiButton,
 };
 use crate::gui::routes::{next_route, previous_route, Route};
-use crate::gui::state::{InstallerConfig, InstallerUiState, UserDraft};
+use crate::gui::state::{InstallerConfig, InstallerContext, InstallerUiState, UserDraft};
 use crate::gui::views::{ActionRow, PageIntro, PageSection, ValidationList};
 
 #[component]
 pub fn UserPage() -> Element {
-    let mut config = use_context::<Signal<InstallerConfig>>();
-    let mut user = use_context::<Signal<UserDraft>>();
-    let mut ui = use_context::<Signal<InstallerUiState>>();
+    let installer = use_context::<InstallerContext>();
+    let theme = use_context::<Theme>();
+    let mut config = installer.config;
+    let mut user = installer.user;
+    let mut ui = installer.ui;
     let config_snapshot = config();
     let user_snapshot = user();
     let validation_errors = user_validation_errors(&config_snapshot, &user_snapshot);
@@ -28,16 +30,19 @@ pub fn UserPage() -> Element {
                 description: "Create the normal user for the installed system. This scaffold keeps password data in memory only.".to_string(),
             }
             Card {
-                color: "bg-white/75".to_string(),
+                color: theme.colors.surface_muted.to_string(),
                 CardHeader {
                     Typography {
                         tag: TypographyTag::P,
-                        class: "m-0 text-xs font-bold uppercase tracking-[0.16em] text-emerald-900/65".to_string(),
+                        class: format!(
+                            "m-0 text-xs font-bold uppercase tracking-[0.16em] {}",
+                            theme.colors.text_muted
+                        ),
                         "Account setup"
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: "m-0 text-base leading-7 text-emerald-900/70".to_string(),
+                        class: format!("m-0 text-base leading-7 {}", theme.colors.text_secondary),
                         "Keep the system identity and login credentials compact and easy to scan."
                     }
                 }

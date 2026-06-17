@@ -3,15 +3,16 @@ use dioxus::prelude::*;
 use crate::api::install::InstallPhase;
 use crate::gui::components::{
     BadgeTone, ButtonVariant, Flexbox, ProgressBar, StatusBadge, Typography, TypographyTag,
-    UiButton,
+    Theme, UiButton,
 };
 use crate::gui::routes::{previous_route, Route};
-use crate::gui::state::InstallRuntime;
+use crate::gui::state::InstallerContext;
 use crate::gui::views::{ActionRow, NoticePanel, PageIntro, PageSection};
 
 #[component]
 pub fn InstallPage() -> Element {
-    let runtime = use_context::<Signal<InstallRuntime>>();
+    let runtime = use_context::<InstallerContext>().runtime;
+    let theme = use_context::<Theme>();
     let runtime_snapshot = runtime();
     let phases = install_phases();
     let navigator = use_navigator();
@@ -28,7 +29,7 @@ pub fn InstallPage() -> Element {
                 description: "The installer clones the NixOS configuration repository, generates a host module for the selected hostname, and runs nixos-install.".to_string(),
             }
             NoticePanel {
-                class: "bg-emerald-50/75 py-5".to_string(),
+                class: "py-5".to_string(),
                 Flexbox {
                     wrap: "flex-wrap".to_string(),
                     items: "items-center".to_string(),
@@ -39,13 +40,13 @@ pub fn InstallPage() -> Element {
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: "m-0 text-sm font-medium text-emerald-900/70".to_string(),
+                        class: format!("m-0 text-sm font-medium {}", theme.colors.text_secondary),
                         "Current phase"
                     }
                 }
                 Typography {
                     tag: TypographyTag::P,
-                    class: "mt-3 text-base font-semibold text-jade-950".to_string(),
+                    class: format!("mt-3 text-base font-semibold {}", theme.colors.text_primary),
                     {
                         runtime_snapshot
                             .current_command
@@ -79,18 +80,22 @@ pub fn InstallPage() -> Element {
             }
             Typography {
                 tag: TypographyTag::H3,
-                class: "m-0 text-lg font-semibold text-jade-950".to_string(),
+                class: format!("m-0 text-lg font-semibold {}", theme.colors.text_primary),
                 "Install log"
             }
             if runtime_snapshot.install_log.is_empty() {
                 Typography {
                     tag: TypographyTag::P,
-                    class: "m-0 text-base text-emerald-900/70".to_string(),
+                    class: format!("m-0 text-base {}", theme.colors.text_secondary),
                     "No log entries yet."
                 }
             } else {
                 pre {
-                    class: "m-0 overflow-x-auto rounded-[1.5rem] bg-jade-950 px-5 py-4 text-sm leading-6 text-emerald-50",
+                    class: format!(
+                        "m-0 overflow-x-auto rounded-[1.5rem] {} px-5 py-4 text-sm leading-6 {}",
+                        theme.colors.surface_inverse,
+                        theme.colors.text_inverse_surface
+                    ),
                     "{runtime_snapshot.install_log.join(\"\\n\")}"
                 }
             }
