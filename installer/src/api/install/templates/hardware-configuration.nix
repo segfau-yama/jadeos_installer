@@ -1,11 +1,6 @@
-{ config, lib, ... }:
+{ lib, ... }:
 let
-  installArgsPath = ./install-args.nix;
-  installArgs =
-    if builtins.pathExists installArgsPath
-    then import installArgsPath
-    else { };
-  installDisk = installArgs.installDisk or config.my.installDisk;
+  installDisk = (import ./install-args.nix).installDisk;
   generatedHardwareModule =
 __JADE_GENERATED_HARDWARE_MODULE__
 in

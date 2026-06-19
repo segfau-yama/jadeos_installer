@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use crate::api::disk::DiskDeviceInfo;
 use crate::gui::components::{
     BadgeTone, ButtonVariant, Card, CardBody, CardFooter, CardHeader, Col, Flexbox, Row,
-    StatusBadge, Theme, Typography, TypographyTag, UiButton,
+    StatusBadge, Typography, TypographyTag, UiButton,
 };
 
 use super::{
@@ -14,7 +14,6 @@ use super::{
 
 #[component]
 pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler<()>) -> Element {
-    let theme = use_context::<Theme>();
     let disk_path = disk.path.clone();
     let removable_label = if disk.removable { "yes" } else { "no" };
     let mounted_label = if disk.mounted { "yes" } else { "no" };
@@ -23,17 +22,26 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
     } else {
         "Use this disk"
     };
+    let card_style = if is_selected {
+        format!(
+            "background-color: color-mix(in srgb, {} 10%, {}); border-color: color-mix(in srgb, {} 24%, transparent);",
+            ThemeColor::Primary.css_var(),
+            ThemeColor::Surface.css_var(),
+            ThemeColor::Primary.css_var(),
+        )
+    } else {
+        format!(
+            "background-color: {}; border-color: color-mix(in srgb, {} 22%, transparent);",
+            ThemeColor::Surface.css_var(),
+            ThemeColor::Secondary.css_var(),
+        )
+    };
 
     rsx! {
         Card {
             key: "{disk_path}",
-            color: if is_selected {
-                theme.bg(ThemeColor::Accent).to_string()
-            } else {
-                theme.bg(ThemeColor::Surface).to_string()
-            },
-            shadow: "shadow-none".to_string(),
-            rounded: "rounded-[1.75rem]".to_string(),
+            class: "rounded-[1.75rem] shadow-none".to_string(),
+            style: card_style,
             CardHeader {
                 class: "gap-4".to_string(),
                 Flexbox {
@@ -46,12 +54,14 @@ pub fn DiskCard(disk: DiskDeviceInfo, is_selected: bool, on_select: EventHandler
                         gap: "gap-1".to_string(),
                         Typography {
                             tag: TypographyTag::H3,
-                            class: format!("m-0 text-xl font-semibold {}", theme.text(ThemeColor::Text)),
+                            class: "m-0 text-xl font-semibold".to_string(),
+                            style: format!("color: {};", ThemeColor::Secondary.css_var()),
                             "{disk_path}"
                         }
                         Typography {
                             tag: TypographyTag::P,
-                            class: format!("m-0 text-sm {}", theme.text(ThemeColor::Muted)),
+                            class: "m-0 text-sm".to_string(),
+                            style: format!("color: {};", ThemeColor::Secondary.css_var()),
                             "{disk.model}"
                         }
                     }

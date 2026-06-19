@@ -99,3 +99,4 @@ In this repository, disk and install operations are inherently destructive.
 - Surface erase risk clearly.
 - Prefer observed validation over confident speculation.
 - Call out rollback limits, prerequisites, and recovery assumptions when reviewing installer changes.
+

@@ -7,6 +7,8 @@ pub struct RowProps {
     gap: String,
     #[props(default = String::new())]
     class: String,
+    #[props(default = String::new())]
+    style: String,
     children: Element,
 }
 
@@ -15,6 +17,7 @@ pub fn Row(props: RowProps) -> Element {
     rsx! {
         div {
             class: "grid {props.cols} {props.gap} {props.class}",
+            style: "{props.style}",
             {props.children}
         }
     }
@@ -24,6 +27,8 @@ pub fn Row(props: RowProps) -> Element {
 pub struct ColProps {
     #[props(default = String::new())]
     class: String,
+    #[props(default = String::new())]
+    style: String,
     children: Element,
 }
 
@@ -32,6 +37,7 @@ pub fn Col(props: ColProps) -> Element {
     rsx! {
         div {
             class: "{props.class}",
+            style: "{props.style}",
             {props.children}
         }
     }

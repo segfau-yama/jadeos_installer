@@ -6,36 +6,37 @@ pub fn run_install_plan(
     _password: &str,
     plan: &InstallPlan,
 ) -> InstallationReport {
-    let mut log = vec![
+    let log = vec![
         "Web demo mode is enabled.".to_string(),
         format!(
             "Simulating install for {} on {}",
+            plan.hostname, plan.target_disk
+        ),
+        format!(
+            "Would create EFI {} and root {} on the selected disk.",
+            plan.efi_partition, plan.root_partition
+        ),
+        format!(
+            "Would clone {} into /mnt/etc/nixos before generating host files.",
+            plan.repository_url
+        ),
+        format!(
+            "Would generate host {} and user {} configuration, then run nixos-install.",
             config.hostname.trim(),
-            plan.target_disk
+            config.username.trim()
         ),
         "No disk changes, mounts, or sudo commands will be executed in the browser build."
             .to_string(),
     ];
 
-    for command in &plan.commands {
-        log.push(format!(
-            "[{}] {}",
-            command.phase.label(),
-            command.description
-        ));
-        log.push(format!("$ {}", command.render_command()));
-    }
-
-    log.push(format!(
-        "Simulated host configuration would be generated for user {}.",
-        config.username.trim()
-    ));
-    log.push("Web demo completed successfully.".to_string());
-
     InstallationReport {
         final_phase: InstallPhase::Finish,
         current_command: None,
-        log,
+        log: {
+            let mut log = log;
+            log.push("Web demo completed successfully.".to_string());
+            log
+        },
         error_message: None,
     }
 }

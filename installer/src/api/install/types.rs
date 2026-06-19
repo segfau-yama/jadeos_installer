@@ -33,36 +33,12 @@ impl InstallPhase {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct InstallCommand {
-    pub phase: InstallPhase,
-    pub description: String,
-    pub argv: Vec<String>,
-    pub destructive: bool,
-}
-
-impl InstallCommand {
-    pub fn render_command(&self) -> String {
-        self.argv.join(" ")
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstallPlan {
     pub repository_url: String,
     pub hostname: String,
     pub target_disk: String,
     pub efi_partition: String,
     pub root_partition: String,
-    pub commands: Vec<InstallCommand>,
-}
-
-impl InstallPlan {
-    pub fn rendered_commands(&self) -> Vec<String> {
-        self.commands
-            .iter()
-            .map(InstallCommand::render_command)
-            .collect()
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

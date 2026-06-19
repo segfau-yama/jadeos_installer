@@ -11,5 +11,5 @@ pub use container::Container;
 pub use flexbox::Flexbox;
 pub use grid::{Col, Row};
 pub use progress_bar::ProgressBar;
-pub use theme::{Theme, ThemeColor, ThemeMode, ThemeProvider, ThemeRadius, ThemeShadow};
+pub use theme::{Theme, ThemeColor, ThemeMode, ThemeProvider};
 pub use typography::{Typography, TypographyTag};

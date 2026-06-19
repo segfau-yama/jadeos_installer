@@ -2,17 +2,17 @@ use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::gui::components::{
-    ButtonVariant, Card, CardBody, CardHeader, Col, Row, TextInput, Theme, Typography,
-    TypographyTag, UiButton,
+    ButtonVariant, Card, CardBody, CardHeader, Col, Row, TextInput, Typography, TypographyTag,
+    UiButton,
 };
 use crate::gui::routes::{next_route, previous_route, Route};
 use crate::gui::state::{InstallerConfig, InstallerContext, InstallerUiState, UserDraft};
+use crate::gui::validation::{apply_validation_errors, user_validation_errors};
 use crate::gui::views::{ActionRow, PageIntro, PageSection, ValidationList};
 
 #[component]
 pub fn UserPage() -> Element {
     let installer = use_context::<InstallerContext>();
-    let theme = use_context::<Theme>();
     let mut config = installer.config;
     let mut user = installer.user;
     let mut ui = installer.ui;
@@ -31,19 +31,17 @@ pub fn UserPage() -> Element {
                 description: "Create the normal user for the installed system. This scaffold keeps password data in memory only.".to_string(),
             }
             Card {
-                color: theme.bg(ThemeColor::Surface).to_string(),
                 CardHeader {
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!(
-                            "m-0 text-xs font-bold uppercase tracking-[0.16em] {}",
-                            theme.text(ThemeColor::Muted)
-                        ),
+                        class: "m-0 text-xs font-bold uppercase tracking-[0.16em]".to_string(),
+                        style: format!("color: {};", ThemeColor::Primary.css_var()),
                         "Account setup"
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-base leading-7 {}", theme.text(ThemeColor::Muted)),
+                        class: "m-0 text-base leading-7".to_string(),
+                        style: format!("color: {};", ThemeColor::Secondary.css_var()),
                         "Keep the system identity and login credentials compact and easy to scan."
                     }
                 }
@@ -134,37 +132,7 @@ pub fn UserPage() -> Element {
 fn continue_from_user(
     config: Signal<InstallerConfig>,
     user: Signal<UserDraft>,
-    mut ui: Signal<InstallerUiState>,
+    ui: Signal<InstallerUiState>,
 ) -> bool {
-    let errors = user_validation_errors(&config(), &user());
-
-    if errors.is_empty() {
-        ui.write().error_message = None;
-        true
-    } else {
-        ui.write().error_message = Some(errors.join(" "));
-        false
-    }
-}
-
-fn user_validation_errors(config: &InstallerConfig, user: &UserDraft) -> Vec<String> {
-    let mut errors = Vec::new();
-
-    if config.hostname.trim().is_empty() {
-        errors.push("Hostname is required.".to_string());
-    }
-
-    if config.username.trim().is_empty() {
-        errors.push("Username is required.".to_string());
-    }
-
-    if user.password.trim().is_empty() {
-        errors.push("Password is required.".to_string());
-    }
-
-    if user.password != user.password_confirmation {
-        errors.push("Password confirmation must match.".to_string());
-    }
-
-    errors
+    apply_validation_errors(ui, user_validation_errors(&config(), &user()))
 }

@@ -2,15 +2,15 @@ use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::api::disk::list_disks;
-use crate::gui::components::{ButtonVariant, Flexbox, Theme, Typography, TypographyTag, UiButton};
+use crate::gui::components::{ButtonVariant, Flexbox, Typography, TypographyTag, UiButton};
 use crate::gui::routes::{next_route, previous_route, Route};
 use crate::gui::state::{InstallerConfig, InstallerContext, InstallerUiState};
+use crate::gui::validation::{apply_validation_errors, disk_validation_errors};
 use crate::gui::views::{ActionRow, DiskCard, NoticePanel, PageIntro, PageSection, ValidationList};
 
 #[component]
 pub fn DiskPage() -> Element {
     let installer = use_context::<InstallerContext>();
-    let theme = use_context::<Theme>();
     let mut config = installer.config;
     let mut ui = installer.ui;
     let config_snapshot = config();
@@ -67,7 +67,8 @@ pub fn DiskPage() -> Element {
             if !config_snapshot.target_disk.is_empty() {
                 Typography {
                     tag: TypographyTag::P,
-                    class: format!("m-0 text-sm font-semibold {}", theme.text(ThemeColor::Accent)),
+                    class: "m-0 text-sm font-semibold".to_string(),
+                    style: format!("color: {};", ThemeColor::Primary.css_var()),
                     "Current selection: {config_snapshot.target_disk}"
                 }
             }
@@ -108,23 +109,6 @@ fn refresh_disks(mut ui: Signal<InstallerUiState>) {
     }
 }
 
-fn continue_from_disk(config: Signal<InstallerConfig>, mut ui: Signal<InstallerUiState>) -> bool {
-    let errors = disk_validation_errors(&config());
-    if errors.is_empty() {
-        ui.write().error_message = None;
-        true
-    } else {
-        ui.write().error_message = Some(errors.join(" "));
-        false
-    }
-}
-
-fn disk_validation_errors(config: &InstallerConfig) -> Vec<String> {
-    let mut errors = Vec::new();
-
-    if config.target_disk.trim().is_empty() {
-        errors.push("A target disk must be selected.".to_string());
-    }
-
-    errors
+fn continue_from_disk(config: Signal<InstallerConfig>, ui: Signal<InstallerUiState>) -> bool {
+    apply_validation_errors(ui, disk_validation_errors(&config()))
 }

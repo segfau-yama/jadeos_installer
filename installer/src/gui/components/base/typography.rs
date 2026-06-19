@@ -18,6 +18,8 @@ pub struct TypographyProps {
     tag: TypographyTag,
     #[props(default = String::new())]
     class: String,
+    #[props(default = String::new())]
+    style: String,
     children: Element,
 }
 
@@ -27,48 +29,56 @@ pub fn Typography(props: TypographyProps) -> Element {
         TypographyTag::Div => rsx! {
             div {
                 class: "{props.class}",
+                style: "{props.style}",
                 {props.children}
             }
         },
         TypographyTag::Span => rsx! {
             span {
                 class: "{props.class}",
+                style: "{props.style}",
                 {props.children}
             }
         },
         TypographyTag::P => rsx! {
             p {
                 class: "{props.class}",
+                style: "{props.style}",
                 {props.children}
             }
         },
         TypographyTag::H1 => rsx! {
             h1 {
                 class: "{props.class}",
+                style: "{props.style}",
                 {props.children}
             }
         },
         TypographyTag::H2 => rsx! {
             h2 {
                 class: "{props.class}",
+                style: "{props.style}",
                 {props.children}
             }
         },
         TypographyTag::H3 => rsx! {
             h3 {
                 class: "{props.class}",
+                style: "{props.style}",
                 {props.children}
             }
         },
         TypographyTag::Label => rsx! {
             label {
                 class: "{props.class}",
+                style: "{props.style}",
                 {props.children}
             }
         },
         TypographyTag::Code => rsx! {
             code {
                 class: "{props.class}",
+                style: "{props.style}",
                 {props.children}
             }
         },

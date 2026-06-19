@@ -1,17 +1,22 @@
 use std::fs;
-use std::io::Write;
 use std::path::Path;
-use std::process::{Command, Stdio};
 
+use crate::api::command::{
+    CommandStrategy, GIT_COMMAND, LSBLK_COMMAND, MKDIR_COMMAND, MKFS_EXT4_COMMAND,
+    MKFS_FAT_COMMAND, MOUNT_COMMAND, NIXOS_ENTER_COMMAND, NIXOS_GENERATE_CONFIG_COMMAND,
+    NIXOS_INSTALL_COMMAND, PARTED_COMMAND, RM_COMMAND, TEE_COMMAND, TRUE_COMMAND, UMOUNT_COMMAND,
+};
+use crate::api::execute::{CommandError, CommandExecutor};
 use crate::gui::state::InstallerConfig;
 
+use super::layout::InstallLayout;
 use super::nix_templates::{
-    render_hardware_configuration, render_host_configuration, render_host_flake_parts,
-    render_install_args, HostTemplateContext, InstallArgsContext,
+    render_gui_user_configuration, render_hardware_configuration, render_host_configuration,
+    render_host_flake_parts, render_install_args, HostTemplateContext, InstallArgsContext,
 };
-use super::types::{InstallPhase, InstallPlan, InstallationReport, INSTALL_MOUNT_ROOT};
-
-const SUDO_NON_INTERACTIVE_FLAG: &str = "--non-interactive";
+use super::types::{
+    InstallPhase, InstallPlan, InstallationReport, INSTALL_BOOT_SIZE, INSTALL_MOUNT_ROOT,
+};
 
 pub fn run_install_plan(
     config: &InstallerConfig,
@@ -56,6 +61,10 @@ fn run_install_plan_inner(
     report: &mut InstallationReport,
     on_progress: &mut dyn FnMut(&InstallationReport),
 ) -> Result<(), String> {
+    let layout = InstallLayout::from_config(config);
+    let detected_hardware = DetectedHardware::detect();
+    let mut executor = CommandExecutor::new();
+
     report.log.push(format!(
         "Starting install for {} on {}",
         plan.hostname, plan.target_disk
@@ -67,215 +76,295 @@ fn run_install_plan_inner(
         .log
         .push("Validated installer inputs. Beginning install execution.".to_string());
     publish_report(report, on_progress);
-    ensure_root_access(report, on_progress)?;
 
-    if is_mountpoint_busy(plan)? {
-        run_command(
+    execute_step(
+        &mut executor,
+        report,
+        on_progress,
+        InstallPhase::Validate,
+        "Verify root access",
+        &TRUE_COMMAND,
+        &[],
+        None,
+        false,
+    )?;
+
+    if is_mountpoint_busy(&mut executor, plan)? {
+        execute_step(
+            &mut executor,
             report,
             on_progress,
             InstallPhase::Validate,
             "Unmount stale installer mounts",
-            "umount",
+            &UMOUNT_COMMAND,
             &["-R", INSTALL_MOUNT_ROOT],
+            None,
+            false,
         )?;
     }
 
-    run_command(
+    report.log.push(format!(
+        "Detected hardware defaults: arch={}, cpu={}, gpu={}",
+        detected_hardware.system_arch, detected_hardware.cpu, detected_hardware.gpu
+    ));
+    publish_report(report, on_progress);
+
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::Partition,
         "Create a fresh GPT partition table",
-        "parted",
-        &["-s", &plan.target_disk, "mklabel", "gpt"],
+        &PARTED_COMMAND,
+        &["-s", layout.target_disk.as_str(), "mklabel", "gpt"],
+        None,
+        false,
     )?;
-    run_command(
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::Partition,
         "Create the EFI partition",
-        "parted",
+        &PARTED_COMMAND,
         &[
             "-s",
-            &plan.target_disk,
+            layout.target_disk.as_str(),
             "mkpart",
             "ESP",
             "fat32",
             "1MiB",
-            "512MiB",
+            INSTALL_BOOT_SIZE,
         ],
+        None,
+        false,
     )?;
-    run_command(
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::Partition,
         "Mark the EFI partition bootable",
-        "parted",
-        &["-s", &plan.target_disk, "set", "1", "esp", "on"],
+        &PARTED_COMMAND,
+        &["-s", layout.target_disk.as_str(), "set", "1", "esp", "on"],
+        None,
+        false,
     )?;
-    run_command(
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::Partition,
         "Create the root partition",
-        "parted",
+        &PARTED_COMMAND,
         &[
             "-s",
-            &plan.target_disk,
+            layout.target_disk.as_str(),
             "mkpart",
             "nixos",
             "ext4",
-            "512MiB",
+            INSTALL_BOOT_SIZE,
             "100%",
         ],
+        None,
+        false,
     )?;
 
-    run_command(
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::Format,
         "Format the EFI partition as FAT32",
-        "mkfs.fat",
-        &["-F", "32", "-n", "boot", &plan.efi_partition],
+        &MKFS_FAT_COMMAND,
+        &["-F", "32", "-n", "boot", layout.efi_partition.as_str()],
+        None,
+        false,
     )?;
-    run_command(
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::Format,
         "Format the root partition as ext4",
-        "mkfs.ext4",
-        &["-L", "nixos", "-F", &plan.root_partition],
+        &MKFS_EXT4_COMMAND,
+        &["-L", "nixos", "-F", layout.root_partition.as_str()],
+        None,
+        false,
     )?;
 
-    run_command(
+    let boot_mount_dir = layout.boot_mount_dir();
+    let etc_dir = format!("{INSTALL_MOUNT_ROOT}/etc");
+    let repo_root = layout.repo_root.display().to_string();
+    let host_dir = layout.host_dir.display().to_string();
+    let user_dir = layout.user_dir.display().to_string();
+    let hardware_dir = layout.hardware_dir.display().to_string();
+
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::Mount,
         "Mount the root filesystem",
-        "mount",
-        &[&plan.root_partition, INSTALL_MOUNT_ROOT],
+        &MOUNT_COMMAND,
+        &[layout.root_partition.as_str(), INSTALL_MOUNT_ROOT],
+        None,
+        false,
     )?;
-    run_command(
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::Mount,
         "Prepare the EFI mountpoint",
-        "mkdir",
-        &["-p", "/mnt/boot"],
+        &MKDIR_COMMAND,
+        &["-p", boot_mount_dir.as_str()],
+        None,
+        false,
     )?;
-    run_command(
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::Mount,
         "Mount the EFI partition",
-        "mount",
-        &[&plan.efi_partition, "/mnt/boot"],
+        &MOUNT_COMMAND,
+        &[layout.efi_partition.as_str(), boot_mount_dir.as_str()],
+        None,
+        false,
     )?;
 
-    let repo_root = Path::new("/mnt/etc/nixos");
-    let host_dir = repo_root.join("nixos").join(config.hostname.trim());
-    let detected_cpu = detect_cpu_kind();
-    let detected_gpu = detect_gpu_kind();
-    report.log.push(format!(
-        "Detected hardware defaults: cpu={}, gpu={}",
-        detected_cpu, detected_gpu
-    ));
-    publish_report(report, on_progress);
-
-    run_command(
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::GenerateConfig,
         "Prepare /mnt/etc",
-        "mkdir",
-        &["-p", "/mnt/etc"],
+        &MKDIR_COMMAND,
+        &["-p", etc_dir.as_str()],
+        None,
+        false,
     )?;
-    remove_path_if_exists(report, on_progress, InstallPhase::GenerateConfig, repo_root)?;
-    run_command(
+    execute_step(
+        &mut executor,
+        report,
+        on_progress,
+        InstallPhase::GenerateConfig,
+        "Reset /mnt/etc/nixos",
+        &RM_COMMAND,
+        &["-rf", repo_root.as_str()],
+        None,
+        false,
+    )?;
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::GenerateConfig,
         "Clone the NixOS configuration repository",
-        "git",
-        &["clone", &plan.repository_url, "/mnt/etc/nixos"],
+        &GIT_COMMAND,
+        &["clone", layout.repository_url.as_str(), repo_root.as_str()],
+        None,
+        false,
+    )?;
+    execute_step(
+        &mut executor,
+        report,
+        on_progress,
+        InstallPhase::GenerateConfig,
+        "Prepare the generated host module directory",
+        &MKDIR_COMMAND,
+        &["-p", host_dir.as_str()],
+        None,
+        false,
+    )?;
+    execute_step(
+        &mut executor,
+        report,
+        on_progress,
+        InstallPhase::GenerateConfig,
+        "Prepare the generated user module directory",
+        &MKDIR_COMMAND,
+        &["-p", user_dir.as_str()],
+        None,
+        false,
+    )?;
+    execute_step(
+        &mut executor,
+        report,
+        on_progress,
+        InstallPhase::GenerateConfig,
+        "Prepare the generated hardware directory",
+        &MKDIR_COMMAND,
+        &["-p", hardware_dir.as_str()],
+        None,
+        false,
     )?;
 
-    let template_context = HostTemplateContext {
-        hostname: config.hostname.trim(),
-        username: config.username.trim(),
-        detected_cpu,
-        detected_gpu,
-    };
-    write_file(
+    write_generated_configuration_files(
+        &mut executor,
         report,
         on_progress,
-        InstallPhase::GenerateConfig,
-        &host_dir.join("flake-parts.nix"),
-        &render_host_flake_parts(&template_context)?,
-    )?;
-    write_file(
-        report,
-        on_progress,
-        InstallPhase::GenerateConfig,
-        &host_dir.join("configuration.nix"),
-        &render_host_configuration(&template_context)?,
-    )?;
-    let install_args_context = InstallArgsContext {
-        efi_partition: &plan.efi_partition,
-        root_partition: &plan.root_partition,
-    };
-    write_file(
-        report,
-        on_progress,
-        InstallPhase::GenerateConfig,
-        &host_dir.join("install-args.nix"),
-        &render_install_args(&install_args_context)?,
+        &layout,
+        &detected_hardware,
     )?;
 
-    let generated_hardware_output = capture_command(
+    let generated_hardware_output = execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::GenerateConfig,
         "Capture hardware configuration",
-        "nixos-generate-config",
+        &NIXOS_GENERATE_CONFIG_COMMAND,
         &["--root", INSTALL_MOUNT_ROOT, "--show-hardware-config"],
+        None,
+        true,
     )?;
     write_file(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::GenerateConfig,
-        &host_dir.join("hardware-configuration.nix"),
+        &layout.hardware_dir.join("hardware-configuration.nix"),
         &render_hardware_configuration(&generated_hardware_output)?,
     )?;
-    run_command(
+
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::GenerateConfig,
-        "Track generated host files in git",
-        "git",
-        &["-C", "/mnt/etc/nixos", "add", "."],
+        "Track the generated host files in git",
+        &GIT_COMMAND,
+        &["-C", repo_root.as_str(), "add", "."],
+        None,
+        false,
     )?;
 
-    run_command(
+    let target_flake_ref = layout.target_flake_ref();
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::InstallSystem,
-        "Install the target system",
-        "nixos-install",
-        &[
-            "--flake",
-            &format!("path:/mnt/etc/nixos#{}", config.hostname.trim()),
-            "--no-root-passwd",
-        ],
+        "Install the target system from the cloned flake",
+        &NIXOS_INSTALL_COMMAND,
+        &["--flake", target_flake_ref.as_str(), "--no-root-passwd"],
+        None,
+        true,
     )?;
 
-    run_command_with_input(
+    let password_input = format!("{}:{password}\n", layout.username);
+    execute_step(
+        &mut executor,
         report,
         on_progress,
         InstallPhase::SetPassword,
         "Set the installed user's password",
-        "nixos-enter",
+        &NIXOS_ENTER_COMMAND,
         &["--root", INSTALL_MOUNT_ROOT, "-c", "chpasswd"],
-        &format!("{}:{password}\n", config.username.trim()),
+        Some(password_input.as_str()),
+        false,
     )?;
 
     report.final_phase = InstallPhase::Finish;
@@ -287,79 +376,39 @@ fn run_install_plan_inner(
     Ok(())
 }
 
-fn ensure_root_access(
-    report: &mut InstallationReport,
-    on_progress: &mut dyn FnMut(&InstallationReport),
-) -> Result<(), String> {
-    let rendered = render_command("sudo", &[SUDO_NON_INTERACTIVE_FLAG, "true"]);
-    report.current_command = Some(rendered.clone());
-    report.log.push("[Validate] Verify root access".to_string());
-    report.log.push(format!("$ {rendered}"));
-    publish_report(report, on_progress);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct DetectedHardware {
+    system_arch: &'static str,
+    cpu: &'static str,
+    gpu: &'static str,
+}
 
-    let output = Command::new("sudo")
-        .args([SUDO_NON_INTERACTIVE_FLAG, "true"])
-        .output()
-        .map_err(|error| format!("failed to start `{rendered}`: {error}"))?;
-
-    push_process_output(report, on_progress, &output.stdout, &output.stderr);
-
-    if output.status.success() {
-        Ok(())
-    } else {
-        Err(
-            "installer cannot obtain root privileges via sudo; check live image sudo policy"
-                .to_string(),
-        )
+impl DetectedHardware {
+    fn detect() -> Self {
+        Self {
+            system_arch: detect_system_arch(),
+            cpu: detect_cpu_kind(),
+            gpu: detect_gpu_kind(),
+        }
     }
 }
 
-fn run_command(
+fn execute_step(
+    executor: &mut CommandExecutor,
     report: &mut InstallationReport,
     on_progress: &mut dyn FnMut(&InstallationReport),
     phase: InstallPhase,
     description: &str,
-    program: &str,
+    strategy: &'static dyn CommandStrategy,
     args: &[&str],
-) -> Result<(), String> {
-    let rendered = render_sudo_command(program, args);
-    report.final_phase = phase;
-    report.current_command = Some(rendered.clone());
-    report
-        .log
-        .push(format!("[{}] {}", phase.label(), description));
-    report.log.push(format!("$ {rendered}"));
-    publish_report(report, on_progress);
-
-    let output = Command::new("sudo")
-        .arg(SUDO_NON_INTERACTIVE_FLAG)
-        .arg(program)
-        .args(args)
-        .output()
-        .map_err(|error| format!("{description}: failed to start `{rendered}`: {error}"))?;
-
-    push_process_output(report, on_progress, &output.stdout, &output.stderr);
-
-    if output.status.success() {
-        Ok(())
-    } else {
-        Err(format_command_failure(
-            description,
-            &rendered,
-            &output.stderr,
-        ))
-    }
-}
-
-fn capture_command(
-    report: &mut InstallationReport,
-    on_progress: &mut dyn FnMut(&InstallationReport),
-    phase: InstallPhase,
-    description: &str,
-    program: &str,
-    args: &[&str],
+    input: Option<&str>,
+    log_stdout: bool,
 ) -> Result<String, String> {
-    let rendered = render_sudo_command(program, args);
+    executor.set_strategy(strategy);
+    let rendered = executor
+        .render_command(args, true)
+        .map_err(|error| format_step_error(description, error))?;
+
     report.final_phase = phase;
     report.current_command = Some(rendered.clone());
     report
@@ -368,121 +417,76 @@ fn capture_command(
     report.log.push(format!("$ {rendered}"));
     publish_report(report, on_progress);
 
-    let output = Command::new("sudo")
-        .arg(SUDO_NON_INTERACTIVE_FLAG)
-        .arg(program)
-        .args(args)
-        .output()
-        .map_err(|error| format!("{description}: failed to start `{rendered}`: {error}"))?;
+    let stdout = executor
+        .super_user_execute(args, input)
+        .map_err(|error| format_step_error(description, error))?;
 
-    push_process_output(report, on_progress, &output.stdout, &output.stderr);
-
-    if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    if log_stdout {
+        push_stdout(report, on_progress, &stdout);
     } else {
-        Err(format_command_failure(
-            description,
-            &rendered,
-            &output.stderr,
-        ))
+        publish_report(report, on_progress);
     }
+
+    Ok(stdout)
 }
 
-fn run_command_with_input(
+fn write_generated_configuration_files(
+    executor: &mut CommandExecutor,
     report: &mut InstallationReport,
     on_progress: &mut dyn FnMut(&InstallationReport),
-    phase: InstallPhase,
-    description: &str,
-    program: &str,
-    args: &[&str],
-    input: &str,
+    layout: &InstallLayout,
+    detected_hardware: &DetectedHardware,
 ) -> Result<(), String> {
-    let rendered = render_sudo_command(program, args);
-    report.final_phase = phase;
-    report.current_command = Some(rendered.clone());
-    report
-        .log
-        .push(format!("[{}] {}", phase.label(), description));
-    report.log.push(format!("$ {rendered}"));
-    publish_report(report, on_progress);
+    let template_context = HostTemplateContext {
+        system_arch: detected_hardware.system_arch,
+        hostname: &layout.hostname,
+        username: &layout.username,
+        detected_cpu: detected_hardware.cpu,
+        detected_gpu: detected_hardware.gpu,
+    };
+    let install_args_context = InstallArgsContext {
+        efi_partition: &layout.efi_partition,
+        root_partition: &layout.root_partition,
+    };
 
-    let mut child = Command::new("sudo")
-        .arg(SUDO_NON_INTERACTIVE_FLAG)
-        .arg(program)
-        .args(args)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|error| format!("{description}: failed to start `{rendered}`: {error}"))?;
+    write_file(
+        executor,
+        report,
+        on_progress,
+        InstallPhase::GenerateConfig,
+        &layout.host_dir.join("flake-parts.nix"),
+        &render_host_flake_parts(&template_context)?,
+    )?;
+    write_file(
+        executor,
+        report,
+        on_progress,
+        InstallPhase::GenerateConfig,
+        &layout.host_dir.join("configuration.nix"),
+        &render_host_configuration(&template_context)?,
+    )?;
+    write_file(
+        executor,
+        report,
+        on_progress,
+        InstallPhase::GenerateConfig,
+        &layout.user_file,
+        &render_gui_user_configuration(&template_context)?,
+    )?;
+    write_file(
+        executor,
+        report,
+        on_progress,
+        InstallPhase::GenerateConfig,
+        &layout.hardware_dir.join("install-args.nix"),
+        &render_install_args(&install_args_context)?,
+    )?;
 
-    if let Some(stdin) = child.stdin.as_mut() {
-        stdin
-            .write_all(input.as_bytes())
-            .map_err(|error| format!("{description}: failed to send input: {error}"))?;
-    }
-
-    let output = child.wait_with_output().map_err(|error| {
-        format!("{description}: failed while waiting for `{rendered}`: {error}")
-    })?;
-
-    push_process_output(report, on_progress, &output.stdout, &output.stderr);
-
-    if output.status.success() {
-        Ok(())
-    } else {
-        Err(format_command_failure(
-            description,
-            &rendered,
-            &output.stderr,
-        ))
-    }
-}
-
-fn push_process_output(
-    report: &mut InstallationReport,
-    on_progress: &mut dyn FnMut(&InstallationReport),
-    stdout: &[u8],
-    stderr: &[u8],
-) {
-    for line in String::from_utf8_lossy(stdout).lines() {
-        if !line.trim().is_empty() {
-            report.log.push(line.to_string());
-        }
-    }
-    for line in String::from_utf8_lossy(stderr).lines() {
-        if !line.trim().is_empty() {
-            report.log.push(line.to_string());
-        }
-    }
-    publish_report(report, on_progress);
-}
-
-fn format_command_failure(description: &str, rendered: &str, stderr: &[u8]) -> String {
-    let stderr = String::from_utf8_lossy(stderr).trim().to_string();
-    if stderr.is_empty() {
-        format!("{description}: `{rendered}` failed")
-    } else {
-        format!("{description}: `{rendered}` failed: {stderr}")
-    }
-}
-
-fn render_command(program: &str, args: &[&str]) -> String {
-    std::iter::once(program)
-        .chain(args.iter().copied())
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
-fn render_sudo_command(program: &str, args: &[&str]) -> String {
-    let mut sudo_args = Vec::with_capacity(args.len() + 2);
-    sudo_args.push(SUDO_NON_INTERACTIVE_FLAG);
-    sudo_args.push(program);
-    sudo_args.extend_from_slice(args);
-    render_command("sudo", &sudo_args)
+    Ok(())
 }
 
 fn write_file(
+    executor: &mut CommandExecutor,
     report: &mut InstallationReport,
     on_progress: &mut dyn FnMut(&InstallationReport),
     phase: InstallPhase,
@@ -497,86 +501,67 @@ fn write_file(
     publish_report(report, on_progress);
 
     if let Some(parent) = path.parent() {
-        run_command(
+        let parent_path = parent.display().to_string();
+        let description = format!("Prepare {}", parent.display());
+        execute_step(
+            executor,
             report,
             on_progress,
             phase,
-            &format!("Prepare {}", parent.display()),
-            "mkdir",
-            &["-p", &parent.display().to_string()],
+            description.as_str(),
+            &MKDIR_COMMAND,
+            &["-p", parent_path.as_str()],
+            None,
+            false,
         )?;
     }
 
-    let rendered = render_sudo_command("tee", &[&path.display().to_string()]);
-    report.current_command = Some(rendered.clone());
-    report.log.push(format!("$ {rendered}"));
-    publish_report(report, on_progress);
-
-    let mut child = Command::new("sudo")
-        .arg(SUDO_NON_INTERACTIVE_FLAG)
-        .arg("tee")
-        .arg(path)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::null())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|error| format!("failed to start `{rendered}`: {error}"))?;
-
-    if let Some(stdin) = child.stdin.as_mut() {
-        stdin
-            .write_all(contents.as_bytes())
-            .map_err(|error| format!("failed to write {}: {error}", path.display()))?;
-    }
-
-    let output = child
-        .wait_with_output()
-        .map_err(|error| format!("failed while waiting for `{rendered}`: {error}"))?;
-
-    push_process_output(report, on_progress, &[], &output.stderr);
-
-    if !output.status.success() {
-        return Err(format_command_failure(
-            &format!("failed to write {}", path.display()),
-            &rendered,
-            &output.stderr,
-        ));
-    }
-
-    Ok(())
-}
-
-fn remove_path_if_exists(
-    report: &mut InstallationReport,
-    on_progress: &mut dyn FnMut(&InstallationReport),
-    phase: InstallPhase,
-    path: &Path,
-) -> Result<(), String> {
-    run_command(
+    let path_string = path.display().to_string();
+    let description = format!("Write {}", path.display());
+    execute_step(
+        executor,
         report,
         on_progress,
         phase,
-        &format!("Reset {}", path.display()),
-        "rm",
-        &["-rf", &path.display().to_string()],
-    )
+        description.as_str(),
+        &TEE_COMMAND,
+        &[path_string.as_str()],
+        Some(contents),
+        false,
+    )?;
+
+    Ok(())
 }
 
 fn publish_report(report: &InstallationReport, on_progress: &mut dyn FnMut(&InstallationReport)) {
     on_progress(report);
 }
 
-fn is_mountpoint_busy(plan: &InstallPlan) -> Result<bool, String> {
-    let output = Command::new("lsblk")
-        .args(["-nr", "-o", "NAME,MOUNTPOINT", &plan.target_disk])
-        .output()
-        .map_err(|error| format!("failed to inspect existing mounts: {error}"))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        return Err(format!("failed to inspect existing mounts: {stderr}"));
+fn push_stdout(
+    report: &mut InstallationReport,
+    on_progress: &mut dyn FnMut(&InstallationReport),
+    stdout: &str,
+) {
+    for line in stdout.lines() {
+        if !line.trim().is_empty() {
+            report.log.push(line.to_string());
+        }
     }
 
-    for line in String::from_utf8_lossy(&output.stdout).lines() {
+    publish_report(report, on_progress);
+}
+
+fn format_step_error(description: &str, error: CommandError) -> String {
+    format!("{description}: {error}")
+}
+
+fn is_mountpoint_busy(executor: &mut CommandExecutor, plan: &InstallPlan) -> Result<bool, String> {
+    executor.set_strategy(&LSBLK_COMMAND);
+    let stdout = executor
+        .execute(&["-nr", "-o", "NAME,MOUNTPOINT", plan.target_disk.as_str()])
+        .map_err(|error| format!("failed to inspect existing mounts: {error}"))?;
+
+    for line in stdout.lines() {
         let trimmed = line.trim();
         if trimmed.is_empty() {
             continue;
@@ -608,6 +593,13 @@ fn detect_cpu_kind() -> &'static str {
         Ok(cpuinfo) if cpuinfo.contains("GenuineIntel") => "intel",
         Ok(cpuinfo) if cpuinfo.contains("AuthenticAMD") => "amd",
         _ => "amd",
+    }
+}
+
+fn detect_system_arch() -> &'static str {
+    match std::env::consts::ARCH {
+        "aarch64" => "aarch64-linux",
+        _ => "x86_64-linux",
     }
 }
 

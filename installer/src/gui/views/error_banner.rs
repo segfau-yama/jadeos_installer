@@ -2,13 +2,11 @@ use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
 use crate::gui::components::{
-    ButtonVariant, Flexbox, ModalDialog, Theme, Typography, TypographyTag, UiButton,
+    ButtonVariant, Flexbox, ModalDialog, Typography, TypographyTag, UiButton,
 };
 
 #[component]
 pub fn ErrorBanner(message: Option<String>, on_dismiss: EventHandler<()>) -> Element {
-    let theme = use_context::<Theme>();
-
     match message {
         Some(message) => rsx! {
             ModalDialog {
@@ -18,23 +16,20 @@ pub fn ErrorBanner(message: Option<String>, on_dismiss: EventHandler<()>) -> Ele
                     gap: "gap-4".to_string(),
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!(
-                            "m-0 text-xs font-bold uppercase tracking-[0.16em] {}",
-                            theme.text(ThemeColor::Warning)
-                        ),
+                        class: "m-0 text-xs font-bold uppercase tracking-[0.16em]".to_string(),
+                        style: format!("color: {};", ThemeColor::Warning.css_var()),
                         "Installer notice"
                     }
                     Typography {
                         tag: TypographyTag::H2,
-                        class: format!(
-                            "m-0 text-2xl font-semibold tracking-[-0.03em] {}",
-                            theme.text(ThemeColor::Text)
-                        ),
+                        class: "m-0 text-2xl font-semibold tracking-[-0.03em]".to_string(),
+                        style: format!("color: {};", ThemeColor::Secondary.css_var()),
                         "Something needs attention"
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-base leading-7 {}", theme.text(ThemeColor::Muted)),
+                        class: "m-0 text-base leading-7".to_string(),
+                        style: format!("color: {};", ThemeColor::Secondary.css_var()),
                         "{message}"
                     }
                     Flexbox {

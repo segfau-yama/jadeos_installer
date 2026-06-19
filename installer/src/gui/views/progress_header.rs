@@ -1,7 +1,7 @@
-use crate::gui::components::{ThemeColor, ThemeRadius, ThemeShadow};
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
-use crate::gui::components::{Flexbox, Theme, Typography, TypographyTag};
+use crate::gui::components::{Flexbox, Typography, TypographyTag};
 use crate::gui::routes::{ordered_routes, route_index, Route};
 
 #[derive(PartialEq, Clone, Props)]
@@ -22,53 +22,48 @@ fn ProgressStep(props: ProgressStepProps) -> Element {
         is_selected,
         is_reached,
     } = props;
-    let theme = use_context::<Theme>();
     let navigator = use_navigator();
-    let step_class = if is_selected {
+    let step_style = if is_selected {
         format!(
-            "{} {} {} {}",
-            theme.border(ThemeColor::Accent),
-            theme.bg(ThemeColor::Accent),
-            theme.text(ThemeColor::Accent),
-            theme.shadow(ThemeShadow::Interactive)
+            "background-color: {}; border-color: {}; color: white; outline-color: {};",
+            ThemeColor::Primary.css_var(),
+            ThemeColor::Primary.css_var(),
+            ThemeColor::Primary.css_var(),
         )
     } else if is_reached {
         format!(
-            "{} {} {} {}",
-            theme.border(ThemeColor::Surface),
-            theme.bg(ThemeColor::Surface),
-            theme.text(ThemeColor::Accent),
-            [
-                theme.hover_border(ThemeColor::Accent),
-                theme.hover_bg(ThemeColor::Surface),
-            ]
-            .join(" ")
+            "background-color: color-mix(in srgb, {} 10%, {}); border-color: color-mix(in srgb, {} 24%, transparent); color: {}; outline-color: {};",
+            ThemeColor::Primary.css_var(),
+            ThemeColor::Surface.css_var(),
+            ThemeColor::Primary.css_var(),
+            ThemeColor::Primary.css_var(),
+            ThemeColor::Primary.css_var(),
         )
     } else {
         format!(
-            "{} {} {}",
-            theme.border(ThemeColor::Surface),
-            theme.bg(ThemeColor::Surface),
-            theme.text(ThemeColor::Muted)
+            "background-color: {}; border-color: color-mix(in srgb, {} 22%, transparent); color: {}; outline-color: {};",
+            ThemeColor::Surface.css_var(),
+            ThemeColor::Secondary.css_var(),
+            ThemeColor::Secondary.css_var(),
+            ThemeColor::Primary.css_var(),
         )
     };
-    let circle_class = if is_selected {
+    let circle_style = if is_selected {
         format!(
-            "{} {}",
-            theme.fill(ThemeColor::Accent),
-            theme.text(ThemeColor::Inverse)
+            "background-color: white; color: {};",
+            ThemeColor::Primary.css_var(),
         )
     } else if is_reached {
         format!(
-            "{} {}",
-            theme.bg(ThemeColor::Accent),
-            theme.text(ThemeColor::Accent)
+            "background-color: {}; color: white;",
+            ThemeColor::Primary.css_var(),
         )
     } else {
         format!(
-            "{} {}",
-            theme.bg(ThemeColor::Muted),
-            theme.text(ThemeColor::Muted)
+            "background-color: color-mix(in srgb, {} 18%, {}); color: {};",
+            ThemeColor::Secondary.css_var(),
+            ThemeColor::Surface.css_var(),
+            ThemeColor::Secondary.css_var(),
         )
     };
 
@@ -76,23 +71,16 @@ fn ProgressStep(props: ProgressStepProps) -> Element {
         button {
             r#type: "button",
             disabled: !is_reached,
-            class: format!(
-                "inline-flex items-center gap-3 {} border px-4 py-3 text-left text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 {} focus-visible:ring-offset-2 disabled:cursor-not-allowed {}",
-                theme.radius(ThemeRadius::Pill),
-                theme.focus_visible(ThemeColor::Accent),
-                step_class
-            ),
+            class: "inline-flex items-center gap-3 rounded-full border px-4 py-3 text-left text-sm font-semibold transition-opacity duration-150 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60".to_string(),
+            style: "{step_style}",
             onclick: move |_| {
                 if is_reached && !is_selected {
                     navigator.push(route.clone());
                 }
             },
             span {
-                class: format!(
-                    "inline-flex h-7 w-7 items-center justify-center {} text-xs font-bold {}",
-                    theme.radius(ThemeRadius::Pill),
-                    circle_class
-                ),
+                class: "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold".to_string(),
+                style: "{circle_style}",
                 "{index + 1}"
             }
             span { "{label}" }
@@ -103,7 +91,6 @@ fn ProgressStep(props: ProgressStepProps) -> Element {
 #[component]
 pub fn ProgressHeader(active_route: Route) -> Element {
     let active_index = route_index(&active_route);
-    let theme = use_context::<Theme>();
 
     rsx! {
         Flexbox {
@@ -111,10 +98,8 @@ pub fn ProgressHeader(active_route: Route) -> Element {
             gap: "gap-3".to_string(),
             Typography {
                 tag: TypographyTag::P,
-                class: format!(
-                    "m-0 text-xs font-bold uppercase tracking-[0.16em] {}",
-                    theme.text(ThemeColor::Muted)
-                ),
+                class: "m-0 text-xs font-bold uppercase tracking-[0.16em]".to_string(),
+                style: format!("color: {};", ThemeColor::Secondary.css_var()),
                 "Progress"
             }
             Flexbox {

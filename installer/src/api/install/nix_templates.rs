@@ -1,10 +1,12 @@
 const HOST_FLAKE_PARTS_TEMPLATE: &str = include_str!("templates/host-flake-parts.nix");
 const HOST_CONFIGURATION_TEMPLATE: &str = include_str!("templates/host-configuration.nix");
+const GUI_USER_TEMPLATE: &str = include_str!("templates/gui-user.nix");
 const INSTALL_ARGS_TEMPLATE: &str = include_str!("templates/install-args.nix");
 const HARDWARE_CONFIGURATION_TEMPLATE: &str = include_str!("templates/hardware-configuration.nix");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HostTemplateContext<'a> {
+    pub system_arch: &'a str,
     pub hostname: &'a str,
     pub username: &'a str,
     pub detected_cpu: &'a str,
@@ -21,7 +23,10 @@ pub fn render_host_flake_parts(context: &HostTemplateContext<'_>) -> Result<Stri
     render_template(
         "host-flake-parts.nix",
         HOST_FLAKE_PARTS_TEMPLATE,
-        &[("__JADE_HOSTNAME__", nix_string(context.hostname))],
+        &[
+            ("__JADE_SYSTEM_ARCH__", nix_string(context.system_arch)),
+            ("__JADE_HOSTNAME__", nix_string(context.hostname)),
+        ],
     )
 }
 
@@ -30,16 +35,27 @@ pub fn render_host_configuration(context: &HostTemplateContext<'_>) -> Result<St
         "host-configuration.nix",
         HOST_CONFIGURATION_TEMPLATE,
         &[
+            ("__JADE_HOSTNAME_ATTR__", nix_attr(context.hostname)),
             ("__JADE_HOSTNAME__", nix_string(context.hostname)),
             ("__JADE_GPU__", nix_string(context.detected_gpu)),
             ("__JADE_CPU__", nix_string(context.detected_cpu)),
             ("__JADE_USERNAME_ATTR__", nix_attr(context.username)),
-            ("__JADE_USERNAME__", nix_string(context.username)),
             (
-                "__JADE_HOME_DIRECTORY__",
-                nix_string(&format!("/home/{}", context.username)),
+                "__JADE_HARDWARE_PATH__",
+                nix_string(&format!(
+                    "${{inputs.self}}/nixos/{}/hardware-configuration.nix",
+                    context.hostname
+                )),
             ),
         ],
+    )
+}
+
+pub fn render_gui_user_configuration(context: &HostTemplateContext<'_>) -> Result<String, String> {
+    render_template(
+        "gui-user.nix",
+        GUI_USER_TEMPLATE,
+        &[("__JADE_USERNAME__", nix_string(context.username))],
     )
 }
 
@@ -129,13 +145,14 @@ fn escape_nix_string(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        render_hardware_configuration, render_host_configuration, render_host_flake_parts,
-        render_install_args, HostTemplateContext, InstallArgsContext,
+        render_gui_user_configuration, render_hardware_configuration, render_host_configuration,
+        render_host_flake_parts, render_install_args, HostTemplateContext, InstallArgsContext,
     };
 
     #[test]
     fn generated_host_flake_uses_hostname() {
         let context = HostTemplateContext {
+            system_arch: "x86_64-linux",
             hostname: "jadeos",
             username: "jade",
             detected_cpu: "amd",
@@ -148,8 +165,9 @@ mod tests {
     }
 
     #[test]
-    fn generated_host_configuration_uses_repo_modules() {
+    fn generated_host_configuration_matches_repo_layout() {
         let context = HostTemplateContext {
+            system_arch: "x86_64-linux",
             hostname: "jadeos",
             username: "jade",
             detected_cpu: "intel",
@@ -158,12 +176,35 @@ mod tests {
 
         let content = render_host_configuration(&context).expect("template should render");
 
-        assert!(content.contains("home-manager"));
-        assert!(content.contains("hyprland"));
+        assert!(content.contains("flake.modules.nixos.\"jadeos\""));
+        assert!(content.contains("system-base"));
+        assert!(content.contains("desktop"));
+        assert!(content.contains("inputs.self.modules.nixos.\"jade\""));
+        assert!(content.contains("\"\\${inputs.self}/nixos/jadeos/hardware-configuration.nix\""));
         assert!(content.contains("networking.hostName = \"jadeos\";"));
-        assert!(content.contains("users.users.\"jade\""));
         assert!(content.contains("my.hardware.cpu = lib.mkDefault \"intel\";"));
         assert!(content.contains("my.hardware.gpu = lib.mkDefault \"amd\";"));
+        assert!(!content.contains("hyprland"));
+    }
+
+    #[test]
+    fn generated_gui_user_configuration_registers_home_manager_profile() {
+        let context = HostTemplateContext {
+            system_arch: "x86_64-linux",
+            hostname: "jadeos",
+            username: "jade",
+            detected_cpu: "intel",
+            detected_gpu: "amd",
+        };
+
+        let content = render_gui_user_configuration(&context).expect("template should render");
+
+        assert!(content.contains("flake.modules.nixos.\"${username}\""));
+        assert!(content.contains("users.users.\"${username}\""));
+        assert!(content.contains("home-manager.users.\"${username}\""));
+        assert!(content.contains("inputs.self.modules.homeManager.\"${username}\""));
+        assert!(content.contains("imports = with inputs.self.modules.homeManager; ["));
+        assert!(content.contains("desktop"));
     }
 
     #[test]
@@ -190,5 +231,6 @@ mod tests {
         assert!(content.contains("generatedHardwareModule ="));
         assert!(content.contains("fileSystems.\"/boot\" = lib.mkForce"));
         assert!(content.contains("boot.loader.systemd-boot.enable = true;"));
+        assert!(!content.contains("config.my.installDisk"));
     }
 }

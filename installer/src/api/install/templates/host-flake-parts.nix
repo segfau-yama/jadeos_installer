@@ -1,4 +1,4 @@
 { inputs, ... }:
 {
-  flake.nixosConfigurations = inputs.self.lib.mkNixos "x86_64-linux" __JADE_HOSTNAME__;
+  flake.nixosConfigurations = inputs.self.lib.mkNixos __JADE_SYSTEM_ARCH__ __JADE_HOSTNAME__;
 }

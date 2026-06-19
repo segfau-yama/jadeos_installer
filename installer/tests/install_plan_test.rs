@@ -37,54 +37,28 @@ fn missing_erase_confirmation_is_rejected() {
 }
 
 #[test]
-fn plan_contains_destructive_actions() {
+fn plan_contains_selected_partitions_and_repository() {
     let plan = generate_install_plan(&valid_config()).expect("valid config should produce a plan");
 
-    assert!(plan.commands.iter().any(|command| command.destructive));
+    assert_eq!(
+        plan.repository_url,
+        "https://github.com/segfau-yama/nixos_configuration.git"
+    );
+    assert_eq!(plan.hostname, "jadeos");
+    assert_eq!(plan.target_disk, "/dev/nvme0n1");
+    assert_eq!(plan.efi_partition, "/dev/nvme0n1p1");
+    assert_eq!(plan.root_partition, "/dev/nvme0n1p2");
 }
 
 #[test]
-fn plan_contains_nixos_generate_config() {
-    let plan = generate_install_plan(&valid_config()).expect("valid config should produce a plan");
+fn mmc_disks_use_partition_separator_in_plan() {
+    let plan = generate_install_plan(&config_with(|config| {
+        config.target_disk = "/dev/mmcblk0".to_string();
+    }))
+    .expect("mmc target disk should produce a plan");
 
-    assert!(plan.rendered_commands().iter().any(
-        |command| command.contains("nixos-generate-config --root /mnt --show-hardware-config")
-    ));
-}
-
-#[test]
-fn plan_contains_nixos_install_flake_command() {
-    let plan = generate_install_plan(&valid_config()).expect("valid config should produce a plan");
-
-    assert!(plan.rendered_commands().iter().any(|command| command
-        .contains("nixos-install --flake path:/mnt/etc/nixos#jadeos --no-root-passwd")));
-}
-
-#[test]
-fn plan_contains_repository_clone_command() {
-    let plan = generate_install_plan(&valid_config()).expect("valid config should produce a plan");
-
-    assert!(plan.rendered_commands().iter().any(|command| {
-        command.contains(
-            "git clone https://github.com/segfau-yama/nixos_configuration.git /mnt/etc/nixos",
-        )
-    }));
-}
-
-#[test]
-fn plan_mounts_selected_partitions_directly() {
-    let plan = generate_install_plan(&valid_config()).expect("valid config should produce a plan");
-    let commands = plan.rendered_commands();
-
-    assert!(commands
-        .iter()
-        .any(|command| command == "mount /dev/nvme0n1p2 /mnt"));
-    assert!(commands
-        .iter()
-        .any(|command| command == "mount /dev/nvme0n1p1 /mnt/boot"));
-    assert!(!commands
-        .iter()
-        .any(|command| command.contains("/dev/disk/by-label")));
+    assert_eq!(plan.efi_partition, "/dev/mmcblk0p1");
+    assert_eq!(plan.root_partition, "/dev/mmcblk0p2");
 }
 
 #[test]

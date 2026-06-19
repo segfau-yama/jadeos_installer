@@ -1,7 +1,4 @@
-use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
-
-use crate::gui::components::Theme;
 
 #[derive(PartialEq, Clone, Props)]
 pub struct ProgressBarProps {
@@ -11,33 +8,43 @@ pub struct ProgressBarProps {
     #[props(default = String::new())]
     class: String,
     #[props(default = String::new())]
-    bar_class: String,
+    style: String,
+    #[props(default = String::new())]
+    bar_style: String,
 }
 
 #[component]
 pub fn ProgressBar(props: ProgressBarProps) -> Element {
     let percentage = props.percentage.min(100);
-    let theme = use_context::<Theme>();
-    let bar_class = if props.bar_class.is_empty() {
-        theme.gradient(ThemeColor::Accent).to_string()
+    let track_style = if props.style.is_empty() {
+        format!(
+            "background-color: color-mix(in srgb, {} 12%, transparent);",
+            crate::gui::components::ThemeColor::Primary.css_var()
+        )
     } else {
-        props.bar_class.clone()
+        format!(
+            "background-color: color-mix(in srgb, {} 12%, transparent); {}",
+            crate::gui::components::ThemeColor::Primary.css_var(),
+            props.style
+        )
+    };
+    let bar_style = if props.bar_style.is_empty() {
+        format!(
+            "background-color: {}; width: {}%;",
+            crate::gui::components::ThemeColor::Primary.css_var(),
+            percentage
+        )
+    } else {
+        format!("width: {}%; {}", percentage, props.bar_style)
     };
 
     rsx! {
         div {
-            class: format!(
-                "w-full overflow-hidden {} {} {}",
-                theme.track(ThemeColor::Accent),
-                props.rounded,
-                props.class
-            ),
+            class: format!("w-full overflow-hidden {} {}", props.rounded, props.class),
+            style: track_style,
             div {
-                class: format!(
-                    "h-full rounded-full bg-gradient-to-r transition-[width] duration-300 {}",
-                    bar_class
-                ),
-                style: "width: {percentage}%;",
+                class: "h-full rounded-full transition-[width] duration-300",
+                style: bar_style,
             }
         }
     }

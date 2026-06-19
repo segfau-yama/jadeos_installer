@@ -1,21 +1,23 @@
 use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
-use crate::gui::components::{Flexbox, Theme, Typography, TypographyTag};
+use crate::gui::components::{Flexbox, Typography, TypographyTag};
 
 #[component]
 fn ValidationMessage(message: String) -> Element {
-    let theme = use_context::<Theme>();
-
     rsx! {
         div {
-            class: format!(
-                "rounded-3xl border {} {} px-4 py-3",
-                theme.border(ThemeColor::Danger), theme.bg(ThemeColor::Danger)
+            class: "rounded-3xl border px-4 py-3".to_string(),
+            style: format!(
+                "background-color: color-mix(in srgb, {} 10%, {}); border-color: color-mix(in srgb, {} 22%, transparent);",
+                ThemeColor::Error.css_var(),
+                ThemeColor::Surface.css_var(),
+                ThemeColor::Error.css_var(),
             ),
             Typography {
                 tag: TypographyTag::P,
-                class: format!("m-0 text-sm font-medium {}", theme.text(ThemeColor::Danger)),
+                class: "m-0 text-sm font-medium".to_string(),
+                style: format!("color: {};", ThemeColor::Error.css_var()),
                 "{message}"
             }
         }

@@ -1,46 +1,30 @@
-use crate::gui::components::{ThemeColor, ThemeRadius, ThemeShadow};
 use dioxus::prelude::*;
 
-use super::{theme::Theme, Flexbox};
+use super::Flexbox;
 
 #[derive(PartialEq, Clone, Props)]
 pub struct CardProps {
     #[props(default = String::new())]
-    color: String,
-    #[props(default = String::new())]
-    shadow: String,
-    #[props(default = String::new())]
-    rounded: String,
-    #[props(default = String::new())]
     class: String,
+    #[props(default = String::new())]
+    style: String,
     children: Element,
 }
 
 #[component]
 pub fn Card(props: CardProps) -> Element {
-    let theme = use_context::<Theme>();
-    let color = if props.color.is_empty() {
-        theme.bg(ThemeColor::Surface)
-    } else {
-        props.color.as_str()
-    };
-    let shadow = if props.shadow.is_empty() {
-        theme.shadow(ThemeShadow::Card)
-    } else {
-        props.shadow.as_str()
-    };
-    let rounded = if props.rounded.is_empty() {
-        theme.radius(ThemeRadius::Card)
-    } else {
-        props.rounded.as_str()
-    };
-
     rsx! {
         Flexbox {
             direction: "flex-col".to_string(),
             class: format!(
-                "relative overflow-hidden border backdrop-blur-xl {} {} {} {} {}",
-                theme.border(ThemeColor::Surface), color, shadow, rounded, props.class
+                "relative overflow-hidden rounded-[2rem] border backdrop-blur-xl shadow-none {}",
+                props.class
+            ),
+            style: format!(
+                "background-color: {}; border-color: color-mix(in srgb, {} 22%, transparent); {}",
+                crate::gui::components::ThemeColor::Surface.css_var(),
+                crate::gui::components::ThemeColor::Secondary.css_var(),
+                props.style
             ),
             {props.children}
         }
@@ -50,9 +34,9 @@ pub fn Card(props: CardProps) -> Element {
 #[derive(PartialEq, Clone, Props)]
 pub struct CardHeaderProps {
     #[props(default = String::new())]
-    color: String,
-    #[props(default = String::new())]
     class: String,
+    #[props(default = String::new())]
+    style: String,
     children: Element,
 }
 
@@ -62,7 +46,8 @@ pub fn CardHeader(props: CardHeaderProps) -> Element {
         Flexbox {
             direction: "flex-col".to_string(),
             gap: "gap-2".to_string(),
-            class: format!("relative px-6 pt-6 {} {}", props.color, props.class),
+            class: format!("relative px-6 pt-6 {}", props.class),
+            style: props.style,
             {props.children}
         }
     }

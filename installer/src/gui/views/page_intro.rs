@@ -1,7 +1,7 @@
 use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
-use crate::gui::components::{Col, Row, Theme, Typography, TypographyTag};
+use crate::gui::components::{Col, Row, Typography, TypographyTag};
 
 #[derive(PartialEq, Clone, Props)]
 pub struct PageIntroProps {
@@ -13,8 +13,6 @@ pub struct PageIntroProps {
 
 #[component]
 pub fn PageIntro(props: PageIntroProps) -> Element {
-    let theme = use_context::<Theme>();
-
     rsx! {
         Row {
             cols: "grid-cols-1 xl:grid-cols-2".to_string(),
@@ -23,20 +21,16 @@ pub fn PageIntro(props: PageIntroProps) -> Element {
             Col {
                 Typography {
                     tag: TypographyTag::H2,
-                    class: format!(
-                        "m-0 text-3xl font-semibold tracking-[-0.03em] {} sm:text-4xl",
-                        theme.text(ThemeColor::Text)
-                    ),
+                    class: "m-0 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl".to_string(),
+                    style: format!("color: {};", ThemeColor::Secondary.css_var()),
                     "{props.title}"
                 }
             }
             Col {
                 Typography {
                     tag: TypographyTag::P,
-                    class: format!(
-                        "m-0 text-base leading-7 {} sm:text-lg",
-                        theme.text(ThemeColor::Muted)
-                    ),
+                    class: "m-0 text-base leading-7 sm:text-lg".to_string(),
+                    style: format!("color: {};", ThemeColor::Secondary.css_var()),
                     "{props.description}"
                 }
             }

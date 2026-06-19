@@ -1,16 +1,14 @@
 use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
-use crate::gui::components::{Col, Flexbox, Row, Theme, Typography, TypographyTag};
+use crate::gui::components::{Col, Flexbox, Row, Typography, TypographyTag};
 
 const APP_TITLE: &str = "JadeOS Installer";
 const APP_SUBTITLE: &str =
-    "A safety-first JadeOS Live CD installer. It clones the NixOS configuration repository, generates a host module, and installs from that flake.";
+    "A safety-first JadeOS Live CD installer. It clones the NixOS configuration repository, generates host, user, and hardware modules, and installs from that flake.";
 
 #[component]
 pub fn AppHeader() -> Element {
-    let theme = use_context::<Theme>();
-
     rsx! {
         header {
             Row {
@@ -22,18 +20,14 @@ pub fn AppHeader() -> Element {
                         gap: "gap-3".to_string(),
                         Typography {
                             tag: TypographyTag::P,
-                            class: format!(
-                                "m-0 text-xs font-bold uppercase tracking-[0.18em] {}",
-                                theme.text(ThemeColor::Muted)
-                            ),
+                            class: "m-0 text-xs font-bold uppercase tracking-[0.18em]".to_string(),
+                            style: format!("color: {};", ThemeColor::Primary.css_var()),
                             "Safety-first installer"
                         }
                         Typography {
                             tag: TypographyTag::H1,
-                            class: format!(
-                                "m-0 text-4xl font-bold tracking-[-0.04em] {} sm:text-5xl lg:text-6xl",
-                                theme.text(ThemeColor::Text)
-                            ),
+                            class: "m-0 text-4xl font-bold tracking-[-0.04em] sm:text-5xl lg:text-6xl".to_string(),
+                            style: format!("color: {};", ThemeColor::Secondary.css_var()),
                             "{APP_TITLE}"
                         }
                     }
@@ -41,7 +35,8 @@ pub fn AppHeader() -> Element {
                 Col {
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-base {} sm:text-lg", theme.text(ThemeColor::Muted)),
+                        class: "m-0 text-base sm:text-lg".to_string(),
+                        style: format!("color: {};", ThemeColor::Secondary.css_var()),
                         "{APP_SUBTITLE}"
                     }
                 }

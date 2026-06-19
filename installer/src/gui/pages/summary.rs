@@ -9,13 +9,14 @@ use crate::api::install::{run_install_plan, InstallationReport};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::api::install::{run_install_plan_with_progress, InstallationReport};
 use crate::gui::components::{
-    BadgeTone, ButtonVariant, Card, CardBody, Col, Flexbox, Row, StatusBadge, Theme, TogglePill,
+    BadgeTone, ButtonVariant, Card, CardBody, Col, Flexbox, Row, StatusBadge, TogglePill,
     Typography, TypographyTag, UiButton,
 };
 use crate::gui::routes::{next_route, previous_route, Route};
 use crate::gui::state::{
     InstallRuntime, InstallerConfig, InstallerContext, InstallerUiState, UserDraft,
 };
+use crate::gui::validation::{apply_validation_errors, summary_validation_errors};
 use crate::gui::views::{ActionRow, InfoTile, PageIntro, PageSection, ValidationList};
 
 const SUMMARY_FIXED_SETTINGS: [(&str, &str); 7] = [
@@ -34,7 +35,6 @@ const ERASE_CONFIRMATION_COPY: &str =
 #[component]
 pub fn SummaryPage() -> Element {
     let installer = use_context::<InstallerContext>();
-    let theme = use_context::<Theme>();
     let mut config = installer.config;
     let user = installer.user;
     let mut ui = installer.ui;
@@ -88,10 +88,13 @@ pub fn SummaryPage() -> Element {
                 }
             }
             Card {
-                color: theme.bg(ThemeColor::Warning).to_string(),
-                class: theme.border(ThemeColor::Warning).to_string(),
-                shadow: "shadow-none".to_string(),
-                rounded: "rounded-[1.75rem]".to_string(),
+                class: "rounded-[1.75rem] shadow-none".to_string(),
+                style: format!(
+                    "background-color: color-mix(in srgb, {} 10%, {}); border-color: color-mix(in srgb, {} 24%, transparent);",
+                    ThemeColor::Warning.css_var(),
+                    ThemeColor::Surface.css_var(),
+                    ThemeColor::Warning.css_var(),
+                ),
                 CardBody {
                     class: "gap-4".to_string(),
                     Flexbox {
@@ -104,7 +107,8 @@ pub fn SummaryPage() -> Element {
                         }
                         Typography {
                             tag: TypographyTag::P,
-                            class: format!("m-0 text-sm font-medium {}", theme.text(ThemeColor::Warning)),
+                            class: "m-0 text-sm font-medium".to_string(),
+                            style: format!("color: {};", ThemeColor::Warning.css_var()),
                             "{ERASE_CONFIRMATION_COPY}"
                         }
                     }
@@ -159,83 +163,92 @@ fn preview_plan(config: &InstallerConfig) -> Option<crate::api::install::Install
     preview_install_plan(config).ok()
 }
 
+struct InstallRequest {
+    config: InstallerConfig,
+    password: String,
+    plan: crate::api::install::InstallPlan,
+}
+
+fn prepare_install_request(
+    config: Signal<InstallerConfig>,
+    user: Signal<UserDraft>,
+    mut ui: Signal<InstallerUiState>,
+) -> Option<InstallRequest> {
+    if !apply_validation_errors(ui, summary_validation_errors(&config(), &user())) {
+        return None;
+    }
+
+    let install_config = config();
+    let password = user().password.clone();
+
+    match generate_install_plan(&install_config) {
+        Ok(plan) => {
+            ui.write().error_message = None;
+            Some(InstallRequest {
+                config: install_config,
+                password,
+                plan,
+            })
+        }
+        Err(error) => {
+            ui.write().error_message = Some(error.to_string());
+            None
+        }
+    }
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 fn start_install(
     config: Signal<InstallerConfig>,
     user: Signal<UserDraft>,
-    mut ui: Signal<InstallerUiState>,
+    ui: Signal<InstallerUiState>,
     mut runtime: Signal<InstallRuntime>,
     mut install_progress: Signal<Option<mpsc::UnboundedReceiver<InstallationReport>>>,
 ) -> bool {
-    let summary_errors = summary_validation_errors(&config(), &user());
-
-    if !summary_errors.is_empty() {
-        ui.write().error_message = Some(summary_errors.join(" "));
+    let Some(request) = prepare_install_request(config, user, ui) else {
         return false;
-    }
+    };
 
-    let config_snapshot = config();
-    let user_snapshot = user();
-    let install_config = config_snapshot.clone();
-    let password = user_snapshot.password.clone();
-    match generate_install_plan(&install_config) {
-        Ok(plan) => {
-            {
-                let mut runtime_state = runtime.write();
-                runtime_state.install_plan = Some(plan.clone());
-                runtime_state.install_phase = crate::api::install::InstallPhase::Validate;
-                runtime_state.current_command =
-                    Some("Starting install in the background...".to_string());
-                runtime_state.install_log = vec![
-                    format!(
-                        "Queued install for {} on {}",
-                        install_config.hostname, install_config.target_disk
-                    ),
-                    "Switching to the install page and starting background execution.".to_string(),
-                ];
-            }
-            ui.write().error_message = None;
-            let (progress_tx, progress_rx) = mpsc::unbounded_channel::<InstallationReport>();
-            *install_progress.write() = Some(progress_rx);
-            std::thread::spawn(move || {
-                let _ =
-                    run_install_plan_with_progress(&install_config, &password, &plan, |report| {
-                        let _ = progress_tx.send(report.clone());
-                    });
-            });
-            true
-        }
-        Err(error) => {
-            ui.write().error_message = Some(error.to_string());
-            false
-        }
+    {
+        let mut runtime_state = runtime.write();
+        runtime_state.install_plan = Some(request.plan.clone());
+        runtime_state.install_phase = crate::api::install::InstallPhase::Validate;
+        runtime_state.current_command = Some("Starting install in the background...".to_string());
+        runtime_state.install_log = vec![
+            format!(
+                "Queued install for {} on {}",
+                request.config.hostname, request.config.target_disk
+            ),
+            "Switching to the install page and starting background execution.".to_string(),
+        ];
     }
+    let (progress_tx, progress_rx) = mpsc::unbounded_channel::<InstallationReport>();
+    *install_progress.write() = Some(progress_rx);
+    std::thread::spawn(move || {
+        let _ = run_install_plan_with_progress(
+            &request.config,
+            &request.password,
+            &request.plan,
+            |report| {
+                let _ = progress_tx.send(report.clone());
+            },
+        );
+    });
+    true
 }
 
 #[cfg(target_arch = "wasm32")]
 fn start_install(
     config: Signal<InstallerConfig>,
     user: Signal<UserDraft>,
-    mut ui: Signal<InstallerUiState>,
+    ui: Signal<InstallerUiState>,
     mut runtime: Signal<InstallRuntime>,
 ) -> bool {
-    let summary_errors = summary_validation_errors(&config(), &user());
-
-    if !summary_errors.is_empty() {
-        ui.write().error_message = Some(summary_errors.join(" "));
-        return false;
-    }
-
-    let config_snapshot = config();
-    let user_snapshot = user();
-    let install_config = config_snapshot.clone();
-    let password = user_snapshot.password.clone();
-    let Ok(plan) = generate_install_plan(&install_config) else {
-        ui.write().error_message = Some("failed to generate install plan".to_string());
+    let Some(request) = prepare_install_request(config, user, ui) else {
         return false;
     };
-    let report = run_install_plan(&install_config, &password, &plan);
-    update_runtime_state(&mut runtime, &mut ui, &plan, report);
+    let report = run_install_plan(&request.config, &request.password, &request.plan);
+    update_runtime_state(&mut runtime, &mut ui, &request.plan, report);
     true
 }
 
@@ -252,34 +265,4 @@ fn update_runtime_state(
     runtime_state.current_command = report.current_command;
     runtime_state.install_log = report.log;
     ui.write().error_message = report.error_message;
-}
-
-fn summary_validation_errors(config: &InstallerConfig, user: &UserDraft) -> Vec<String> {
-    let mut errors = Vec::new();
-
-    if config.hostname.trim().is_empty() {
-        errors.push("Hostname is required.".to_string());
-    }
-
-    if config.username.trim().is_empty() {
-        errors.push("Username is required.".to_string());
-    }
-
-    if user.password.trim().is_empty() {
-        errors.push("Password is required.".to_string());
-    }
-
-    if user.password != user.password_confirmation {
-        errors.push("Password confirmation must match.".to_string());
-    }
-
-    if config.target_disk.trim().is_empty() {
-        errors.push("A target disk must be selected.".to_string());
-    }
-
-    if !config.disk_erase_confirmed {
-        errors.push("The disk erase confirmation must be checked.".to_string());
-    }
-
-    errors
 }

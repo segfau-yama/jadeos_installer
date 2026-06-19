@@ -1,7 +1,5 @@
-use crate::gui::components::{ThemeColor, ThemeRadius};
+use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
-
-use crate::gui::components::Theme;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum BadgeTone {
@@ -17,36 +15,41 @@ pub fn StatusBadge(
     #[props(default = BadgeTone::Muted)] tone: BadgeTone,
     #[props(default = String::new())] class: String,
 ) -> Element {
-    let theme = use_context::<Theme>();
-    let tone_class = match tone {
+    let tone_style = match tone {
         BadgeTone::Muted => format!(
-            "{} {} {}",
-            theme.border(ThemeColor::Surface),
-            theme.bg(ThemeColor::Surface),
-            theme.text(ThemeColor::Accent)
+            "background-color: color-mix(in srgb, {} 12%, {}); border-color: color-mix(in srgb, {} 22%, transparent); color: {};",
+            ThemeColor::Secondary.css_var(),
+            ThemeColor::Surface.css_var(),
+            ThemeColor::Secondary.css_var(),
+            ThemeColor::Secondary.css_var(),
         ),
-        BadgeTone::Accent | BadgeTone::Success => format!(
-            "{} {} {}",
-            theme.border(ThemeColor::Accent),
-            theme.bg(ThemeColor::Accent),
-            theme.text(ThemeColor::Accent)
+        BadgeTone::Accent => format!(
+            "background-color: color-mix(in srgb, {} 12%, {}); border-color: color-mix(in srgb, {} 22%, transparent); color: {};",
+            ThemeColor::Primary.css_var(),
+            ThemeColor::Surface.css_var(),
+            ThemeColor::Primary.css_var(),
+            ThemeColor::Primary.css_var(),
+        ),
+        BadgeTone::Success => format!(
+            "background-color: color-mix(in srgb, {} 12%, {}); border-color: color-mix(in srgb, {} 22%, transparent); color: {};",
+            ThemeColor::Success.css_var(),
+            ThemeColor::Surface.css_var(),
+            ThemeColor::Success.css_var(),
+            ThemeColor::Success.css_var(),
         ),
         BadgeTone::Warning => format!(
-            "{} {} {}",
-            theme.border(ThemeColor::Warning),
-            theme.bg(ThemeColor::Warning),
-            theme.text(ThemeColor::Warning)
+            "background-color: color-mix(in srgb, {} 12%, {}); border-color: color-mix(in srgb, {} 22%, transparent); color: {};",
+            ThemeColor::Warning.css_var(),
+            ThemeColor::Surface.css_var(),
+            ThemeColor::Warning.css_var(),
+            ThemeColor::Warning.css_var(),
         ),
     };
 
     rsx! {
         span {
-            class: format!(
-                "inline-flex items-center gap-2 {} border px-3 py-1.5 text-sm font-semibold {} {}",
-                theme.radius(ThemeRadius::Pill),
-                tone_class,
-                class
-            ),
+            class: format!("inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold {}", class),
+            style: "{tone_style}",
             {children}
         }
     }

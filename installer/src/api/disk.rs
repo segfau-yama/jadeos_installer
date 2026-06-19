@@ -1,10 +1,15 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-#[cfg(not(all(feature = "web", not(feature = "desktop"))))]
-use std::process::Command;
 
 use serde::de::{Deserializer, Error as DeError};
 use serde::Deserialize;
+
+#[cfg(not(all(feature = "web", not(feature = "desktop"))))]
+use crate::api::command::LSBLK_COMMAND;
+#[cfg(not(all(feature = "web", not(feature = "desktop"))))]
+use crate::api::execute::{CommandError, CommandExecutor};
+
+const DEFAULT_MODEL: &str = "Unknown model";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiskDeviceInfo {
@@ -24,18 +29,16 @@ impl DiskDeviceInfo {
 
 #[derive(Debug)]
 pub enum DiskError {
-    Io(std::io::Error),
-    CommandFailed(String),
+    #[cfg(not(all(feature = "web", not(feature = "desktop"))))]
+    Command(CommandError),
     Parse(serde_json::Error),
 }
 
 impl Display for DiskError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Io(error) => write!(f, "failed to inspect block devices: {error}"),
-            Self::CommandFailed(message) => {
-                write!(f, "lsblk did not complete successfully: {message}")
-            }
+            #[cfg(not(all(feature = "web", not(feature = "desktop"))))]
+            Self::Command(error) => write!(f, "failed to inspect block devices: {error}"),
             Self::Parse(error) => write!(f, "failed to parse lsblk JSON: {error}"),
         }
     }
@@ -44,9 +47,9 @@ impl Display for DiskError {
 impl Error for DiskError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::Io(error) => Some(error),
+            #[cfg(not(all(feature = "web", not(feature = "desktop"))))]
+            Self::Command(error) => Some(error),
             Self::Parse(error) => Some(error),
-            Self::CommandFailed(_) => None,
         }
     }
 }
@@ -71,6 +74,28 @@ struct LsblkDevice {
     mountpoints: Vec<Option<String>>,
 }
 
+impl LsblkDevice {
+    fn into_disk_info(self) -> Option<DiskDeviceInfo> {
+        if self.device_type != "disk" {
+            return None;
+        }
+
+        let path = self.path.unwrap_or_else(|| format!("/dev/{}", self.name));
+        if should_skip_device(&self.name) || !is_disk_device_path(&path) {
+            return None;
+        }
+
+        Some(DiskDeviceInfo {
+            name: self.name,
+            path,
+            size_bytes: self.size.unwrap_or_default(),
+            model: normalize_model(self.model),
+            removable: self.rm.unwrap_or(false),
+            mounted: has_mountpoint(&self.mountpoints),
+        })
+    }
+}
+
 #[cfg(all(feature = "web", not(feature = "desktop")))]
 pub fn list_disks() -> Result<Vec<DiskDeviceInfo>, DiskError> {
     crate::web_api::disk::list_disks()
@@ -78,22 +103,18 @@ pub fn list_disks() -> Result<Vec<DiskDeviceInfo>, DiskError> {
 
 #[cfg(not(all(feature = "web", not(feature = "desktop"))))]
 pub fn list_disks() -> Result<Vec<DiskDeviceInfo>, DiskError> {
-    let output = Command::new("lsblk")
-        .args([
+    let mut executor = CommandExecutor::new();
+    executor.set_strategy(&LSBLK_COMMAND);
+
+    let stdout = executor
+        .execute(&[
             "--json",
             "-b",
             "-o",
             "NAME,PATH,SIZE,MODEL,RM,TYPE,MOUNTPOINTS",
         ])
-        .output()
-        .map_err(DiskError::Io)?;
+        .map_err(DiskError::Command)?;
 
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        return Err(DiskError::CommandFailed(stderr));
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
     parse_lsblk_output(&stdout)
 }
 
@@ -103,38 +124,10 @@ pub fn parse_lsblk_output(stdout: &str) -> Result<Vec<DiskDeviceInfo>, DiskError
     let mut disks = parsed
         .blockdevices
         .into_iter()
-        .filter(|device| device.device_type == "disk")
-        .filter_map(|device| {
-            let name = device.name;
-            let path = match device.path {
-                Some(path) => path,
-                None => format!("/dev/{name}"),
-            };
-
-            if should_skip_device(&name) || !is_disk_device_path(&path) {
-                return None;
-            }
-
-            Some(DiskDeviceInfo {
-                name,
-                path,
-                size_bytes: device.size.unwrap_or_default(),
-                model: device
-                    .model
-                    .unwrap_or_else(|| "Unknown model".to_string())
-                    .trim()
-                    .to_string(),
-                removable: device.rm.unwrap_or(false),
-                mounted: device
-                    .mountpoints
-                    .iter()
-                    .flatten()
-                    .any(|mountpoint| !mountpoint.trim().is_empty()),
-            })
-        })
+        .filter_map(LsblkDevice::into_disk_info)
         .collect::<Vec<_>>();
 
-    disks.sort_by(|left, right| left.path.cmp(&right.path));
+    disks.sort_unstable_by(|left, right| left.path.cmp(&right.path));
     Ok(disks)
 }
 
@@ -155,27 +148,11 @@ fn is_whole_disk_name(name: &str) -> bool {
         return false;
     }
 
-    if let Some(rest) = name.strip_prefix("nvme") {
-        return matches_nvme_disk(rest);
-    }
-
-    if let Some(rest) = name.strip_prefix("mmcblk") {
-        return !rest.is_empty() && rest.chars().all(|character| character.is_ascii_digit());
-    }
-
-    if let Some(rest) = name.strip_prefix("xvd") {
-        return matches_alpha_suffix(rest);
-    }
-
-    if let Some(rest) = name
-        .strip_prefix("sd")
-        .or_else(|| name.strip_prefix("vd"))
-        .or_else(|| name.strip_prefix("hd"))
-    {
-        return matches_alpha_suffix(rest);
-    }
-
-    false
+    matches_prefix(name, "nvme", matches_nvme_disk)
+        || matches_prefix(name, "mmcblk", matches_numeric_suffix)
+        || ["xvd", "sd", "vd", "hd"]
+            .into_iter()
+            .any(|prefix| matches_prefix(name, prefix, matches_alpha_suffix))
 }
 
 fn matches_nvme_disk(rest: &str) -> bool {
@@ -193,6 +170,14 @@ fn matches_nvme_disk(rest: &str) -> bool {
             .all(|character| character.is_ascii_digit())
 }
 
+fn matches_prefix(name: &str, prefix: &str, matcher: fn(&str) -> bool) -> bool {
+    name.strip_prefix(prefix).is_some_and(matcher)
+}
+
+fn matches_numeric_suffix(value: &str) -> bool {
+    !value.is_empty() && value.chars().all(|character| character.is_ascii_digit())
+}
+
 fn matches_alpha_suffix(value: &str) -> bool {
     !value.is_empty()
         && value
@@ -208,23 +193,75 @@ enum RemovableValue {
     String(String),
 }
 
+impl RemovableValue {
+    fn into_bool<E: DeError>(self) -> Result<bool, E> {
+        match self {
+            Self::Bool(removable) => Ok(removable),
+            Self::Number(removable) => Ok(removable != 0),
+            Self::String(removable) => match removable.trim() {
+                "0" | "false" => Ok(false),
+                "1" | "true" => Ok(true),
+                other => Err(E::custom(format!(
+                    "unsupported lsblk removable value: {other}"
+                ))),
+            },
+        }
+    }
+}
+
 fn deserialize_removable<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
 where
     D: Deserializer<'de>,
 {
     let value = Option::<RemovableValue>::deserialize(deserializer)?;
 
-    value
-        .map(|value| match value {
-            RemovableValue::Bool(removable) => Ok(removable),
-            RemovableValue::Number(removable) => Ok(removable != 0),
-            RemovableValue::String(removable) => match removable.trim() {
-                "0" | "false" => Ok(false),
-                "1" | "true" => Ok(true),
-                other => Err(D::Error::custom(format!(
-                    "unsupported lsblk removable value: {other}"
-                ))),
-            },
-        })
-        .transpose()
+    value.map(RemovableValue::into_bool::<D::Error>).transpose()
+}
+
+fn normalize_model(model: Option<String>) -> String {
+    model
+        .unwrap_or_else(|| DEFAULT_MODEL.to_string())
+        .trim()
+        .to_string()
+}
+
+fn has_mountpoint(mountpoints: &[Option<String>]) -> bool {
+    mountpoints
+        .iter()
+        .flatten()
+        .any(|mountpoint| !mountpoint.trim().is_empty())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_disk_device_path;
+
+    #[test]
+    fn whole_disk_paths_are_accepted() {
+        for path in [
+            "/dev/sda",
+            "/dev/vda",
+            "/dev/hda",
+            "/dev/xvda",
+            "/dev/nvme0n1",
+            "/dev/mmcblk0",
+        ] {
+            assert!(is_disk_device_path(path), "{path} should be accepted");
+        }
+    }
+
+    #[test]
+    fn partitions_and_virtual_devices_are_rejected() {
+        for path in [
+            "/dev/sda1",
+            "/dev/nvme0n1p1",
+            "/dev/mmcblk0p1",
+            "/dev/loop0",
+            "/dev/zram0",
+            "/dev/sr0",
+            "/tmp/not-a-disk",
+        ] {
+            assert!(!is_disk_device_path(path), "{path} should be rejected");
+        }
+    }
 }

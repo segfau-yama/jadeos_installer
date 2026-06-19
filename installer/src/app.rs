@@ -37,7 +37,12 @@ pub fn app() -> Element {
         ThemeProvider {
             theme: theme,
             div {
-                class: format!("min-h-screen px-4 py-8 sm:px-6 lg:px-8 {}", theme.bg(ThemeColor::Page)),
+                class: "min-h-screen px-4 py-8 sm:px-6 lg:px-8".to_string(),
+                style: format!(
+                    "background-color: {}; color: {};",
+                    ThemeColor::BackGround.css_var(),
+                    ThemeColor::Secondary.css_var(),
+                ),
                 Container {
                     Row {
                         cols: "grid-cols-1".to_string(),

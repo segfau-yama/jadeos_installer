@@ -1,7 +1,7 @@
 use crate::gui::components::ThemeColor;
 use dioxus::prelude::*;
 
-use crate::gui::components::{Theme, Typography, TypographyTag};
+use crate::gui::components::{Typography, TypographyTag};
 
 #[derive(PartialEq, Clone, Props)]
 pub struct InfoTileProps {
@@ -13,22 +13,25 @@ pub struct InfoTileProps {
 
 #[component]
 pub fn InfoTile(props: InfoTileProps) -> Element {
-    let theme = use_context::<Theme>();
-
     rsx! {
         div {
-            class: format!(
-                "rounded-[1.5rem] border {} {} px-5 py-4 {}",
-                theme.border(ThemeColor::Surface), theme.bg(ThemeColor::Accent), props.class
+            class: format!("rounded-[1.5rem] border px-5 py-4 {}", props.class),
+            style: format!(
+                "background-color: color-mix(in srgb, {} 8%, {}); border-color: color-mix(in srgb, {} 22%, transparent);",
+                ThemeColor::Primary.css_var(),
+                ThemeColor::Surface.css_var(),
+                ThemeColor::Primary.css_var(),
             ),
             Typography {
                 tag: TypographyTag::P,
-                class: format!("m-0 text-xs font-bold uppercase tracking-[0.12em] {}", theme.text(ThemeColor::Muted)),
+                class: "m-0 text-xs font-bold uppercase tracking-[0.12em]".to_string(),
+                style: format!("color: {};", ThemeColor::Primary.css_var()),
                 "{props.label}"
             }
             Typography {
                 tag: TypographyTag::P,
-                class: format!("mt-2 text-base font-semibold {}", theme.text(ThemeColor::Text)),
+                class: "mt-2 text-base font-semibold".to_string(),
+                style: format!("color: {};", ThemeColor::Secondary.css_var()),
                 "{props.value}"
             }
         }

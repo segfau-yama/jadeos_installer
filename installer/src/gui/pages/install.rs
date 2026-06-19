@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 
 use crate::api::install::{InstallPhase, InstallationReport};
 use crate::gui::components::{
-    BadgeTone, ButtonVariant, Flexbox, ProgressBar, StatusBadge, Theme, Typography, TypographyTag,
+    BadgeTone, ButtonVariant, Flexbox, ProgressBar, StatusBadge, Typography, TypographyTag,
     UiButton,
 };
 use crate::gui::routes::{previous_route, Route};
@@ -18,7 +18,6 @@ pub fn InstallPage() -> Element {
     let mut ui = installer.ui;
     #[cfg(not(target_arch = "wasm32"))]
     let mut install_progress = installer.install_progress;
-    let theme = use_context::<Theme>();
     #[cfg(not(target_arch = "wasm32"))]
     use_future(move || async move {
         let Some(mut progress_rx) = install_progress.write().take() else {
@@ -42,7 +41,7 @@ pub fn InstallPage() -> Element {
         PageSection {
             PageIntro {
                 title: "Install".to_string(),
-                description: "The installer clones the NixOS configuration repository, generates a host module for the selected hostname, and runs nixos-install.".to_string(),
+                description: "The installer clones the NixOS configuration repository, generates host, user, and hardware modules for the selected machine, and runs nixos-install.".to_string(),
             }
             NoticePanel {
                 class: "py-5".to_string(),
@@ -56,13 +55,15 @@ pub fn InstallPage() -> Element {
                     }
                     Typography {
                         tag: TypographyTag::P,
-                        class: format!("m-0 text-sm font-medium {}", theme.text(ThemeColor::Muted)),
+                        class: "m-0 text-sm font-medium".to_string(),
+                        style: format!("color: {};", ThemeColor::Secondary.css_var()),
                         "Current phase"
                     }
                 }
                 Typography {
                     tag: TypographyTag::P,
-                    class: format!("mt-3 text-base font-semibold {}", theme.text(ThemeColor::Text)),
+                    class: "mt-3 text-base font-semibold".to_string(),
+                    style: format!("color: {};", ThemeColor::Secondary.css_var()),
                     {
                         runtime_snapshot
                             .current_command
@@ -96,21 +97,26 @@ pub fn InstallPage() -> Element {
             }
             Typography {
                 tag: TypographyTag::H3,
-                class: format!("m-0 text-lg font-semibold {}", theme.text(ThemeColor::Text)),
+                class: "m-0 text-lg font-semibold".to_string(),
+                style: format!("color: {};", ThemeColor::Secondary.css_var()),
                 "Install log"
             }
             if runtime_snapshot.install_log.is_empty() {
                 Typography {
                     tag: TypographyTag::P,
-                    class: format!("m-0 text-base {}", theme.text(ThemeColor::Muted)),
+                    class: "m-0 text-base".to_string(),
+                    style: format!("color: {};", ThemeColor::Secondary.css_var()),
                     "No log entries yet."
                 }
             } else {
                 pre {
-                    class: format!(
-                        "m-0 overflow-x-auto rounded-[1.5rem] {} px-5 py-4 text-sm leading-6 {}",
-                        theme.bg(ThemeColor::Inverse),
-                        theme.text(ThemeColor::Inverse)
+                    class: "m-0 overflow-x-auto rounded-[1.5rem] border px-5 py-4 text-sm leading-6".to_string(),
+                    style: format!(
+                        "background-color: color-mix(in srgb, {} 8%, {}); border-color: color-mix(in srgb, {} 22%, transparent); color: {};",
+                        ThemeColor::Secondary.css_var(),
+                        ThemeColor::Surface.css_var(),
+                        ThemeColor::Secondary.css_var(),
+                        ThemeColor::Secondary.css_var(),
                     ),
                     "{runtime_snapshot.install_log.join(\"\\n\")}"
                 }
